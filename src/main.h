@@ -1,0 +1,97 @@
+#ifndef main_h
+#define main_h
+
+#include <Arduino.h>
+#include <ArduinoOTA.h>
+#include <ArduinoJson.h>
+#include <FS.h>   
+#include "SPIFFS.h"
+#include <esp_wifi.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <ESP32SSDP.h>
+#include <WebServer.h>
+#include <WiFiUdp.h>
+#include <ESPmDNS.h>
+#include <DNSServer.h>
+#include <PubSubClient.h>
+#include <WiFiManager.h>
+#include <HardwareSerial.h>
+#include <ESP8266WebServer.h>
+#include <DNSServer.h>
+#include <ParadoxEvents.h>
+
+#endif
+
+
+
+
+#define firmware "PARADOX32_0.0.1"
+
+#define mqtt_server       "192.168.2.230"
+#define mqtt_port         "1883"
+#define mqtt_user         ""
+#define mqtt_password     "" 
+
+#define Hostname          "paradox32CTL" //not more than 15
+
+#define timezone 2.0 //for setdate command
+
+#define Stay_Arm  0x01
+#define Stay_Arm2 0x02
+#define Sleep_Arm 0x03
+#define Full_Arm 0x04
+#define Disarm  0x05
+#define Bypass 0x10
+#define PGMon 0x32
+#define PGMoff 0x33
+
+#define MessageLength 37
+
+#define LED LED_BUILTIN
+
+#define Uart0_RX 
+
+//If esp is dev kit then set to 1 else 0
+bool ESPDEVKit = 1;
+
+bool Hassio= 0; // 1 enables 0 disables Hassio-Openhab support
+bool HomeKit= 1 ;// enables homekit topic
+bool SendAllE0events =1 ;//If you need all events set to 1 else 0 
+bool usePartitions= 1; //If you use partitions enable this to get partition number in Hassio topic 
+bool ParadoxGSMInstalled =1;
+
+bool TRACE = 0;
+bool OTAUpdate = 0;
+
+#define def_topicOut "out" 
+#define def_topicStatus "status"
+#define def_topicIn "in"
+#define def_topicHassioArm "hassio/Arm"
+#define def_topicHassio "hassio"
+#define def_topicArmHomekit "HomeKit"
+
+
+
+
+//If you need event decriptions set to 1 else 0 Can cause slow downs on heavy systems.
+//Can also be enabled by sending sendeventdescriptions=1 to in topic.
+//Enable it here if you want it enabled after a reboot
+bool SendEventDescriptions =1;
+
+
+void serial_flush_buffer();
+void handleMqttKeepAlive();
+void sendMQTT(String topicNameSend, String dataStr,bool  retain);
+void sendCharMQTT(char* topic, char* data , bool retain);
+void subscribing(char* topicName);
+void readSerial();
+void answer_E0();
+boolean reconnect();
+struct inPayload Decodejson(char *Payload);
+void doLogin(byte pass1, byte pass2);
+void ControlPanel(inPayload data);
+void ArmState();
+void PanelStatus0();
+void PanelStatus1();
+String getpage();
