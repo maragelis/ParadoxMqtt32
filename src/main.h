@@ -5,7 +5,7 @@
 #include <ArduinoOTA.h>
 #include <ArduinoJson.h>
 #include <FS.h>   
-#include "SPIFFS.h"
+#include <SPIFFS.h>
 #include <esp_wifi.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
@@ -59,7 +59,7 @@ bool Hassio= 0; // 1 enables 0 disables Hassio-Openhab support
 bool HomeKit= 1 ;// enables homekit topic
 bool SendAllE0events =1 ;//If you need all events set to 1 else 0 
 bool usePartitions= 1; //If you use partitions enable this to get partition number in Hassio topic 
-bool ParadoxGSMInstalled =1;
+
 
 bool TRACE = 0;
 bool OTAUpdate = 0;
@@ -71,7 +71,35 @@ bool OTAUpdate = 0;
 #define def_topicHassio "hassio"
 #define def_topicArmHomekit "HomeKit"
 
+#pragma GSMComunication
 
+//#define ParadoxGSMInstalled  // Comment out to use PARADOX GSMModule
+//#define Sim800Instaled //
+
+
+#ifdef ParadoxGSMInstalled
+#define GSMModuleRX  GPIO_NUM_26 //RX pin of GSM or Dialer Module 
+#define GSMModuleTX  GPIO_NUM_27 //TX pin of GSM or Dialer Module 
+#else
+#ifdef Sim800Instaled
+
+#define MODEM_RST            5
+#define MODEM_PWKEY          4
+#define MODEM_POWER_ON       23
+#define MODEM_TX             27
+#define MODEM_RX             26
+
+// Configure TinyGSM library
+#define TINY_GSM_MODEM_SIM800      // Modem is SIM800
+#define TINY_GSM_RX_BUFFER 1024    // Set RX buffer to 1Kb
+
+const char simPIN[] = ""; 
+
+#include <TinyGsmClient.h>
+
+#endif
+#endif
+#pragma GSMComunication
 
 
 //If you need event decriptions set to 1 else 0 Can cause slow downs on heavy systems.

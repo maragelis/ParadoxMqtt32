@@ -411,13 +411,14 @@ void readSerial(){
       ArduinoOTA.handle();
     }
       
-    if (ParadoxGSMInstalled)
-    {
+#ifdef ParadoxGSMInstalled
+
       while (GSMModule.available()>0  ) 
       {
           ParadoxSerial.write(GSMModule.read());
       }
-    } 
+  
+  #endif
 
     HTTP.handleClient();
     handleMqttKeepAlive();
@@ -432,10 +433,13 @@ void readSerial(){
     {
       int serialdata = ParadoxSerial.read();  
       inData[pindex++]=serialdata;
-      if (ParadoxGSMInstalled)
-      {
-        GSMModule.write(serialdata);
-      }
+
+#ifdef ParadoxGSMInstalled
+      
+        GSMModule.write(serialdata);  
+
+#endif
+
     } 
     inData[++pindex]=0x00; // Make it print-friendly
 
@@ -1277,7 +1281,7 @@ void setup() {
 
   
   ParadoxSerial.begin(9600,SERIAL_8N1);
-  GSMModule.begin(9600,SERIAL_8N1,26,25);
+  GSMModule.begin(9600,SERIAL_8N1, GSMModuleRX, GSMModuleTX);
   Debug.begin(9600,SERIAL_8N1);
 
   
