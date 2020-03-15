@@ -71,9 +71,9 @@ bool OTAUpdate = 0;
 #define def_topicHassio "hassio"
 #define def_topicArmHomekit "HomeKit"
 
-#pragma GSMComunication
 
-//#define ParadoxGSMInstalled  // Comment out to use PARADOX GSMModule
+
+#define ParadoxGSMInstalled  // Comment out to use PARADOX GSMModule
 //#define Sim800Instaled //
 
 
@@ -99,7 +99,7 @@ const char simPIN[] = "";
 
 #endif
 #endif
-#pragma GSMComunication
+
 
 
 //If you need event decriptions set to 1 else 0 Can cause slow downs on heavy systems.
