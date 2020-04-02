@@ -1,0 +1,45 @@
+{
+    "name": "ESP32SSPD", 
+    "version": "1.0.1", 
+    "keywords": [
+        "communication"
+    ], 
+    "description": "Simple SSDP library for ESP32", 
+    "frameworks": [
+        "arduino"
+    ], 
+    "platforms": [
+        "espressif32"
+    ], 
+    "authors": [
+        {
+            "email": null, 
+            "url": null, 
+            "maintainer": false, 
+            "name": "Me-No-Dev"
+        }, 
+        {
+            "email": null, 
+            "url": null, 
+            "maintainer": true, 
+            "name": "luc-github"
+        }
+    ], 
+    "repository": {
+        "type": "git", 
+        "url": "https://github.com/luc-github/ESP32SSDP"
+    }, 
+    "homepage": null, 
+    "export": {
+        "include": null, 
+        "exclude": [
+            "extras", 
+            "docs", 
+            "tests", 
+            "test", 
+            "*.doxyfile", 
+            "*.pdf"
+        ]
+    }, 
+    "id": 6066
+}
