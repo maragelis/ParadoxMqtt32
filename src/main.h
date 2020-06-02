@@ -6,6 +6,7 @@
 #include <ArduinoJson.h>
 #include <FS.h>   
 #include <SPIFFS.h>
+#include <SPI.h>
 #include <esp_wifi.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
@@ -26,7 +27,7 @@
 
 
 
-#define firmware "PARADOX32_0.0.1"
+#define firmware "PARADOX32_0.0.2"
 
 #define mqtt_server       "192.168.2.230"
 #define mqtt_port         "1883"
@@ -36,6 +37,7 @@
 #define Hostname          "paradox32CTL" //not more than 15
 
 #define timezone 2.0 //for setdate command
+
 
 #define Stay_Arm  0x01
 #define Stay_Arm2 0x02
@@ -51,6 +53,7 @@
 #define LED LED_BUILTIN
 
 #define Uart0_RX 
+#define TTLCD
 
 //If esp is dev kit then set to 1 else 0
 bool ESPDEVKit = 1;
@@ -73,9 +76,30 @@ bool OTAUpdate = 0;
 
 
 
-#define ParadoxGSMInstalled  // Comment out to use PARADOX GSMModule
+//#define ParadoxGSMInstalled  // Comment out to use PARADOX GSMModule
 //#define Sim800Instaled //
 
+#ifdef TTLCD
+#include <TFT_eSPI.h>
+
+#ifndef TFT_DISPOFF
+#define TFT_DISPOFF 0x28
+#endif
+
+#ifndef TFT_SLPIN
+#define TFT_SLPIN   0x10
+#endif
+
+#define TFT_MOSI            19
+#define TFT_SCLK            18
+#define TFT_CS              5
+#define TFT_DC              16
+#define TFT_RST             23
+
+#define TFT_BL          4   // Display backlight control pin
+#define ADC_EN          14  //ADC_EN is the ADC detection enable port
+
+#endif
 
 #ifdef ParadoxGSMInstalled
 #define GSMModuleRX  GPIO_NUM_26 //RX pin of GSM or Dialer Module 
@@ -123,3 +147,5 @@ void ArmState();
 void PanelStatus0();
 void PanelStatus1();
 String getpage();
+void espDelay(int ms);
+void SetupTFT();
