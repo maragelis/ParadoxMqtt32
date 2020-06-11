@@ -54,8 +54,8 @@ struct inPayload
  
  paradoxArm homekitStatus;
  
- 
-TFT_eSPI tft = TFT_eSPI(135, 240); // Invoke custom library
+ tftScreen tfts = tftScreen(HasTFTScreen);
+
  
  
 byte checksumCalculate(byte checksum) {
@@ -84,6 +84,7 @@ void trc(String msg){
   if (TRACE) {
   Debug.println(msg);
   //sendMQTT(root_topicStatus,msg,false);
+    
   }
 }
 
@@ -1276,61 +1277,26 @@ void mountfs(){
     trc(F("failed to mount FS"));
   }
 }
-void espDelay(int ms)
-{
-    esp_sleep_enable_timer_wakeup(ms * 1000);
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-    esp_light_sleep_start();
-}
-void SetupTFT()
-{
-  tft.init();
-    tft.setRotation(1);
-    tft.fillScreen(TFT_BLACK);
-    tft.setTextSize(2);
-    tft.setTextColor(TFT_WHITE);
-    tft.setCursor(0, 0);
-    tft.setTextDatum(MC_DATUM);
-    tft.setTextSize(1);
 
-    if (TFT_BL > 0) { // TFT_BL has been set in the TFT_eSPI library in the User Setup file TTGO_T_Display.h
-        pinMode(TFT_BL, OUTPUT); // Set backlight pin to output mode
-        digitalWrite(TFT_BL, TFT_BACKLIGHT_ON); // Turn backlight on. TFT_BACKLIGHT_ON has been set in the TFT_eSPI library in the User Setup file TTGO_T_Display.h
-    }
 
-  tft.setSwapBytes(true);
-  tft.setRotation(3);
-    tft.fillScreen(TFT_RED);
-    espDelay(1000);
-    tft.fillScreen(TFT_BLUE);
-    espDelay(1000);
-    tft.fillScreen(TFT_GREEN);
-    espDelay(1000);
-
-}
 
 void setup() {
-#ifdef TTLCD 
-  SetupTFT();
 
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.fillScreen(TFT_BLACK);
-  tft.setTextDatum(MC_DATUM);
-  tft.setTextSize(2);
-  tft.setTextDatum(TL_DATUM);
-  tft.println("ParadoxMQTT");
-  tft.println("Starting");
-#endif
-  
+  if (HasTFTScreen)
+  {
+    
+    tfts.SetupTFT();
+  }
+
   SetupMqttServer();
  
   SetupMqttTopics();
   pinMode(LED, OUTPUT);
   
-  tft.println("Starting Wifi");
+  
   WiFi.mode(WIFI_STA);
 
-  tft.println("Starting Paradox Serial");
+ 
   ParadoxSerial.begin(9600,SERIAL_8N1);
   #ifdef ParadoxGSMInstalled
     GSMModule.begin(9600,SERIAL_8N1, GSMModuleRX, GSMModuleTX);
@@ -1346,7 +1312,7 @@ void setup() {
 
   
   trc(F("serial monitor is up"));
-  tft.println("serial monitor is up");
+  
   serial_flush_buffer();
 
   
@@ -1366,10 +1332,7 @@ void setup() {
   char readymsg[64];
   sprintf(readymsg, " {\"firmware\":\"SYSTEM %s\"} ", firmware);
   
-  tft.fillScreen(TFT_BLACK);
-  tft.setTextDatum(TL_DATUM);
-  tft.setCursor(0, 0);
-  tft.drawString(firmware, tft.width() / 2, tft.height() / 2);
+ 
 
   sendCharMQTT(root_topicStatus, readymsg, false);
   lastReconnectAttempt = 0;

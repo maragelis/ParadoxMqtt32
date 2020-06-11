@@ -18,11 +18,12 @@
 #include <PubSubClient.h>
 #include <WiFiManager.h>
 #include <HardwareSerial.h>
-#include <ESP8266WebServer.h>
+#include <ESPAsyncWebServer.h>
 #include <DNSServer.h>
 #include <ParadoxEvents.h>
 
 #endif
+
 
 
 
@@ -53,7 +54,9 @@
 #define LED LED_BUILTIN
 
 #define Uart0_RX 
-#define TTLCD
+#define TTLCD 
+
+
 
 //If esp is dev kit then set to 1 else 0
 bool ESPDEVKit = 1;
@@ -66,6 +69,7 @@ bool usePartitions= 1; //If you use partitions enable this to get partition numb
 
 bool TRACE = 0;
 bool OTAUpdate = 0;
+bool HasTFTScreen  = 0;
 
 #define def_topicOut "out" 
 #define def_topicStatus "status"
@@ -79,27 +83,9 @@ bool OTAUpdate = 0;
 //#define ParadoxGSMInstalled  // Comment out to use PARADOX GSMModule
 //#define Sim800Instaled //
 
-#ifdef TTLCD
-#include <TFT_eSPI.h>
+#include <tftScreen.h>
 
-#ifndef TFT_DISPOFF
-#define TFT_DISPOFF 0x28
-#endif
 
-#ifndef TFT_SLPIN
-#define TFT_SLPIN   0x10
-#endif
-
-#define TFT_MOSI            19
-#define TFT_SCLK            18
-#define TFT_CS              5
-#define TFT_DC              16
-#define TFT_RST             23
-
-#define TFT_BL          4   // Display backlight control pin
-#define ADC_EN          14  //ADC_EN is the ADC detection enable port
-
-#endif
 
 #ifdef ParadoxGSMInstalled
 #define GSMModuleRX  GPIO_NUM_26 //RX pin of GSM or Dialer Module 
