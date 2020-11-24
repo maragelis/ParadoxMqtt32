@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "*.tpp": "cpp",
-        "system_error": "cpp"
+        "system_error": "cpp",
+        "string": "cpp"
     }
 }
