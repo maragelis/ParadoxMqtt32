@@ -414,10 +414,7 @@ void readSerial(){
       yield();
     }
       
-    if (OTAUpdate)
-    {
-      ArduinoOTA.handle();
-    }
+   
       
 #ifdef ParadoxGSMInstalled
 
@@ -1323,8 +1320,8 @@ void setup() {
   setup_wifi();
   StartSSDP();
   
-  ArduinoOTA.setHostname(Hostname);
-  ArduinoOTA.begin();
+  //ArduinoOTA.setHostname(Hostname);
+  //ArduinoOTA.begin();
   trc("Finnished wifi setup");
   
   delay(1500);

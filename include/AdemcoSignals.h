@@ -1,7 +1,13 @@
+#ifndef AdemcoSignals_h
+#define AdemcoSignals_h
+
+
 #include "Arduino.h"
 #include "FS.h"
 #include "SD.h"
 #include <SPI.h>
+#include <string>
+#include <iostream>
 
 // Please select the corresponding model
 
@@ -53,43 +59,6 @@ SPIClass SPI1(HSPI);
 #define MY_MISO     27
 #define MY_MOSI     26
 
-
-
-
-
-
-class AdemcoSignals
-{
-private:
-    /* data */
-    
-public:
-
-
-    AdemcoSignals(/* args */);
-    ~AdemcoSignals();
-    void SetupAdemco();  
-    void setupModem();
-    void turnOffNetlight();
-    void turnOnNetlight();
-    void HangUpCall();
-    void CallNumber(String Number);
-    void SendDTMF(char Tone, int duration);
-    void CalculateChecksum();
-    
-   
-    
-};
-
-AdemcoSignals::AdemcoSignals(/* args */)
-{
-}
-
-AdemcoSignals::~AdemcoSignals()
-{
-}
-
-
 enum eventqualifier
 {
     NewEvent_or_Opening=1,
@@ -97,6 +66,56 @@ enum eventqualifier
     Previously_reported_condition_still_present=6
 
 };
+
+
+struct AlarmMessage
+{
+    char* PhoneNumber;
+    char* AccountNumber;
+    char* MessageType; //18
+    eventqualifier EventQualifier;
+    char*  AlarmPartition;
+    char* ZoneNumber;
+    char* checksum;
+
+};
+
+
+
+class AdemcoSignals
+{
+private:
+    bool CallAnswered = false;
+    bool res = false;
+    
+public:
+
+    
+    AdemcoSignals(/* args */);
+    ~AdemcoSignals();
+    void SetupAdemco();  
+    void setupModem();
+    void turnOffNetlight();
+    void turnOnNetlight();
+    void HangUpCall();
+    void AdemcoCallNumber(char* Number);
+    void SendDTMF(char Tone, int duration);
+    void SendDTMFsequense(char* chars);
+    bool SendMessage(AlarmMessage msg);
+    AlarmMessage CalculateChecksum(AlarmMessage alarmMessage);
+    
+   
+    
+};
+
+
+
+AdemcoSignals::~AdemcoSignals()
+{
+}
+
+
+
 
 enum ademcoSignalenum
 {
@@ -390,3 +409,7 @@ Ademco_System_Inactivity=654
 };
 
 
+
+
+
+#endif

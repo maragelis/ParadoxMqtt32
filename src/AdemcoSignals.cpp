@@ -3,24 +3,54 @@
 
 
 
-struct AlarmMessage
+
+AdemcoSignals::AdemcoSignals(/* args */)
 {
-    char AccountNumber[4];
-    char MessageType[2];
-    eventqualifier EventQualifier;
-    char  Partition[3];
-    char ZoneNumber[2];
-    char checksum[2];
+     
+    
 
-};
+}
+
+void ademcoDelay(int time)
+{
+    int period = time;
+    unsigned long time_now = 0;
+    time_now = millis();
+          
+    while(millis() < time_now + period){
+        ;
+    }
+}
+
+bool AdemcoSignals::SendMessage(AlarmMessage msg)
+{
+    msg = CalculateChecksum(msg);
+    bool retval = false;
+    int wait =0;
+    AdemcoCallNumber(msg.PhoneNumber);
+    
+    while (!CallAnswered)
+    {
+        ademcoDelay(1000);
+        wait++;
+        if(wait>10)
+            return retval;
+    }
+
+    
+
+    //Burst     
+     //E represents single frequency 1400HZ sound, F represents single frequency 2300HZ sound. 
+    SendDTMF('E',100);
+    SendDTMF('F',100);
+    
 
 
+    return retval;
+
+}
 
 
-
-
-bool CallAnswered = false;
-bool res = false;
 
 void AdemcoSignals::setupModem()
 {
@@ -49,9 +79,10 @@ void AdemcoSignals::setupModem()
 }
 
 
-void AdemcoSignals::CallNumber(String Number)
+void AdemcoSignals::AdemcoCallNumber(char* Number)
 {
-    res = modem.callNumber(Number);
+    String s = Number;
+    res = modem.callNumber(s);
     if (res)
     {
         delay(1000L);
@@ -72,23 +103,54 @@ int ConvertChar2Int(char character )
 int getSumOfChar(char* s)
 {
     int chk = 0;
-    char * t; 
-    for (t = s; s != '\0'; t++) {
-        chk += ConvertChar2Int(s[t]);
+    //char cars[6] = "Volvo";
+    for(int i = 0;  s[i]!='\0'; i++) {
+    //printf("%c \n",cars[i]) ;
+        chk+=ConvertChar2Int(s[i]);
     }
+    return chk;
 }
 
 AlarmMessage AdemcoSignals::CalculateChecksum(AlarmMessage alarmMessage)
 {
-    int chksum =60;
-    for (t = s; s != '\0'; t++) {
-        size++;
+    int chksum =0;
+    int sum = 0;
+
+    char checksum[2 + sizeof(char)];
+    sum += getSumOfChar(alarmMessage.AccountNumber);
+    sum += getSumOfChar(alarmMessage.MessageType);
+    sum += (int)alarmMessage.EventQualifier;
+    sum += getSumOfChar(alarmMessage.ZoneNumber);
+    
+    //Find the next highest multiple of 15
+    for(int i = 15; i<sum +15 ; i=i+15) {
+        chksum = i;
     }
+    chksum =chksum-sum;
+
+    if (chksum==0)
+    {
+        chksum=15;
+    }
+    sprintf(checksum, "%d", chksum);
+    alarmMessage.checksum = checksum;
+
+    return alarmMessage;
 }
 
 void AdemcoSignals::SendDTMF(char tone, int duration)
 {
     modem.dtmfSend(tone,duration);
+}
+void AdemcoSignals::SendDTMFsequense(char* chars)
+{
+    int digit = 0;
+    for(int i = 0;  chars[i]!='\0'; i++) {
+    //printf("%c \n",cars[i]) ;
+        digit=ConvertChar2Int(chars[i]);
+    }
+
+    modem.dtmfSend(digit);
 }
 
 
