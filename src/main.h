@@ -64,7 +64,7 @@ bool ESPDEVKit = 1;
 bool Hassio= 0; // 1 enables 0 disables Hassio-Openhab support
 bool HomeKit= 1 ;// enables homekit topic
 bool SendAllE0events =1 ;//If you need all events set to 1 else 0 
-bool usePartitions= 1; //If you use partitions enable this to get partition number in Hassio topic 
+bool usePartitions= 0; //If you use partitions enable this to get partition number in Hassio topic 
 
 
 bool TRACE = 0;
@@ -82,8 +82,15 @@ bool HasTFTScreen  = 0;
 
 //#define ParadoxGSMInstalled  // Comment out to use PARADOX GSMModule
 //#define Sim800Instaled //
+//#define HasTFTScreen //
 
+
+
+#ifdef HasTFTScreen
 #include <tftScreen.h>
+HasTFTScreen =1;
+#endif
+
 
 
 

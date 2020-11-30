@@ -54,7 +54,7 @@ struct inPayload
  
  paradoxArm homekitStatus;
  
- tftScreen tfts = tftScreen(HasTFTScreen);
+ //tftScreen tfts = tftScreen(HasTFTScreen);
 
  
  
@@ -416,14 +416,14 @@ void readSerial(){
       
    
       
-#ifdef ParadoxGSMInstalled
+/* #ifdef ParadoxGSMInstalled
 
       while (GSMModule.available()>0  ) 
       {
           ParadoxSerial.write(GSMModule.read());
       }
   
-  #endif
+  #endif */
 
     HTTP.handleClient();
     handleMqttKeepAlive();
@@ -1278,13 +1278,11 @@ void mountfs(){
 
 
 void setup() {
-
-  if (HasTFTScreen)
-  {
-    
+#ifdef HasTFTScreen
+ 
     tfts.SetupTFT();
-  }
-
+ 
+#endif
   SetupMqttServer();
  
   SetupMqttTopics();
