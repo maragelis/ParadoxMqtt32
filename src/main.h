@@ -6,6 +6,7 @@
 #include <ArduinoJson.h>
 #include <FS.h>   
 #include <SPIFFS.h>
+#include <SPI.h>
 #include <esp_wifi.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
@@ -43,6 +44,7 @@
 #define timezone 2 //for setdate command
 const char* ntpServer = "pool.ntp.org";
 
+
 #define Stay_Arm  0x01
 #define Stay_Arm2 0x02
 #define Sleep_Arm 0x03
@@ -57,6 +59,9 @@ const char* ntpServer = "pool.ntp.org";
 #define LED LED_BUILTIN
 
 #define Uart0_RX 
+#define TTLCD 
+
+
 
 //If esp is dev kit then set to 1 else 0
 bool ESPDEVKit = 1;
@@ -64,12 +69,13 @@ bool ESPDEVKit = 1;
 bool Hassio= 1; // 1 enables 0 disables Hassio-Openhab support
 bool HomeKit= 1 ;// enables homekit topic
 bool SendAllE0events =1 ;//If you need all events set to 1 else 0 
-bool usePartitions= 1; //If you use partitions enable this to get partition number in Hassio topic 
+bool usePartitions= 0; //If you use partitions enable this to get partition number in Hassio topic 
 
 int ArmStateRefresh = 30 ; //will send arm state every 30 seconds dont use smaller then 30, 0 to disable;
 
 bool TRACE = 0;
 bool OTAUpdate = 0;
+bool HasTFTScreen  = 0;
 
 #define def_topicOut "out" 
 #define def_topicStatus "status"
@@ -82,6 +88,16 @@ bool OTAUpdate = 0;
 
 //#define ParadoxGSMInstalled  // Comment out to use PARADOX GSMModule
 //#define Sim800Instaled //
+//#define HasTFTScreen //
+
+
+
+#ifdef HasTFTScreen
+#include <tftScreen.h>
+HasTFTScreen =1;
+#endif
+
+
 
 
 #ifdef ParadoxGSMInstalled
