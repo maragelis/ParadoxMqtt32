@@ -32,7 +32,7 @@
 
 
 
-#define firmware "PARADOX32_2020.12.30"
+#define firmware "PARADOX32_2020.12.30.4"
 
 #define mqtt_server       "192.168.2.230"
 #define mqtt_port         "1883"
@@ -66,7 +66,7 @@ const char* ntpServer = "pool.ntp.org";
 //If esp is dev kit then set to 1 else 0
 bool ESPDEVKit = 1;
 
-bool Hassio= 1; // 1 enables 0 disables Hassio-Openhab support
+bool Hassio= 0; // 1 enables 0 disables Hassio-Openhab support
 bool HomeKit= 1 ;// enables homekit topic
 bool SendAllE0events =1 ;//If you need all events set to 1 else 0 
 bool usePartitions= 0; //If you use partitions enable this to get partition number in Hassio topic 
@@ -74,7 +74,7 @@ bool usePartitions= 0; //If you use partitions enable this to get partition numb
 int ArmStateRefresh = 30 ; //will send arm state every 30 seconds dont use smaller then 30, 0 to disable;
 
 bool TRACE = 0;
-bool OTAUpdate = 0;
+bool OTAUpdate = 1;
 bool HasTFTScreen  = 0;
 
 #define def_topicOut "out" 
