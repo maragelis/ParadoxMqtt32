@@ -9,24 +9,29 @@
 #include <esp_wifi.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
-#include <ESP32SSDP.h>
+
 #include <WebServer.h>
 #include <WiFiUdp.h>
 #include <ESPmDNS.h>
 #include <DNSServer.h>
-#include <PubSubClient.h>
-#include <WiFiManager.h>
+#include "PubSubClient.h"
+#include "ESP_WiFiManager.h" 
 #include <HardwareSerial.h>
-#include <ESP8266WebServer.h>
+#include <AsyncTCP.h>
+
+#include <WebServer.h>
+#include <ESP32SSDP.h>
 #include <DNSServer.h>
 #include <ParadoxEvents.h>
-
-#endif
-
-
+#include <WiFiMulti.h>
+#include <time.h>
 
 
-#define firmware "PARADOX32_0.0.1"
+
+
+
+
+#define firmware "PARADOX32_2020.12.30"
 
 #define mqtt_server       "192.168.2.230"
 #define mqtt_port         "1883"
@@ -35,7 +40,8 @@
 
 #define Hostname          "paradox32CTL" //not more than 15
 
-#define timezone 2.0 //for setdate command
+#define timezone 2 //for setdate command
+const char* ntpServer = "pool.ntp.org";
 
 #define Stay_Arm  0x01
 #define Stay_Arm2 0x02
@@ -55,11 +61,12 @@
 //If esp is dev kit then set to 1 else 0
 bool ESPDEVKit = 1;
 
-bool Hassio= 0; // 1 enables 0 disables Hassio-Openhab support
+bool Hassio= 1; // 1 enables 0 disables Hassio-Openhab support
 bool HomeKit= 1 ;// enables homekit topic
 bool SendAllE0events =1 ;//If you need all events set to 1 else 0 
 bool usePartitions= 1; //If you use partitions enable this to get partition number in Hassio topic 
 
+int ArmStateRefresh = 30 ; //will send arm state every 30 seconds dont use smaller then 30, 0 to disable;
 
 bool TRACE = 0;
 bool OTAUpdate = 0;
@@ -71,9 +78,9 @@ bool OTAUpdate = 0;
 #define def_topicHassio "hassio"
 #define def_topicArmHomekit "HomeKit"
 
+#define USE_LITTLEFS    true
 
-
-#define ParadoxGSMInstalled  // Comment out to use PARADOX GSMModule
+//#define ParadoxGSMInstalled  // Comment out to use PARADOX GSMModule
 //#define Sim800Instaled //
 
 
@@ -123,3 +130,7 @@ void ArmState();
 void PanelStatus0();
 void PanelStatus1();
 String getpage();
+void panelSetDate();
+
+
+#endif /*main_h*/

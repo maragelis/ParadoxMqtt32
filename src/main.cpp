@@ -1,6 +1,7 @@
 
 #include <main.h>
 
+const long  gmtOffset_sec =  3600 * timezone;
 
 HardwareSerial ParadoxSerial(2);
 HardwareSerial Debug(0);
@@ -27,6 +28,9 @@ long armStatusDelay =0;
 
 WebServer HTTP(80);
 
+
+WiFiMulti wifiMulti;
+
 struct inPayload
 {
   byte PcPasswordFirst2Digits;
@@ -47,7 +51,8 @@ struct inPayload
  
  paradoxArm homekitStatus;
  
- 
+
+
 
  
  
@@ -154,6 +159,23 @@ void StartSSDP(){
   if (WiFi.waitForConnectResult() == WL_CONNECTED) {
 
     Debug.printf("Starting HTTP...\n");
+
+   
+    HTTP.on("/description.xml", HTTP_GET,  []() {
+      SSDP.schema(HTTP.client());
+    });
+
+   
+
+     HTTP.on("/", HTTP_GET, []() {
+      HTTP.send(200, "text/plain", Hostname);
+    });
+    HTTP.begin();
+/*
+ HTTP.on("/index.html", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(200, "text/plain", String(getpage()));
+    });
+
     HTTP.on("/index.html", HTTP_GET, []() {
       HTTP.send(200, "text/html", getpage());
     });
@@ -161,11 +183,9 @@ void StartSSDP(){
       HTTP.send(200, "text/plain", Hostname);
     });
 
-    HTTP.on("/description.xml", HTTP_GET, []() {
-      SSDP.schema(HTTP.client());
-    });
+    
     HTTP.begin();
-
+*/
     Debug.printf("Starting SSDP...\n");
     SSDP.setSchemaURL(F("description.xml"));
     SSDP.setDeviceType(F("upnp:rootdevice"));
@@ -173,9 +193,9 @@ void StartSSDP(){
     SSDP.setName(Hostname);
     SSDP.setSerialNumber(WiFi.macAddress());
     SSDP.setURL(String("http://") + WiFi.localIP().toString().c_str() +"/index.html");
-    SSDP.setModelName(F("ESP8266Wemos"));
+    SSDP.setModelName(F("ESP32"));
     SSDP.setModelNumber(firmware);
-    SSDP.setModelURL(F("https://github.com/maragelis/ParadoxRs232toMqtt"));
+    SSDP.setModelURL(F("https://github.com/maragelis/ParadoxMqtt32"));
     SSDP.setManufacturer(F("PM ELECTRONICS"));
     SSDP.setManufacturerURL(F("https://github.com/maragelis/"));
     SSDP.begin();
@@ -195,6 +215,7 @@ void StartSSDP(){
 
     trc(F("Ready!\n"));
   }
+  
 }
 
 void readSerialQuick(){
@@ -278,10 +299,10 @@ void updateArmStatus(byte event, byte sub_event, byte partition){
 }
 void sendMQTT(String topicNameSend, String dataStr,bool  retain){
     handleMqttKeepAlive();
-    char topicStrSend[100];
-    topicNameSend.toCharArray(topicStrSend,26);
+    char topicStrSend[256];
+    topicNameSend.toCharArray(topicStrSend,256);
     char dataStrSend[200];
-    dataStr.toCharArray(dataStrSend,200);
+    dataStr.toCharArray(dataStrSend,256);
     boolean pubresult = client.publish(topicStrSend,dataStrSend ,retain);
     if (TRACE)
      {
@@ -296,22 +317,34 @@ void sendMQTT(String topicNameSend, String dataStr,bool  retain){
 
 void sendArmStatus(){
   char output[128];
-  StaticJsonBuffer<128> jsonBuffer;
-  JsonObject& root = jsonBuffer.createObject();
+  DynamicJsonDocument root(128);
+  //StaticJsonBuffer<128> jsonBuffer;
+  //JsonObject& root = jsonBuffer.createObject();
         if (Hassio)
         {
-          char* sTopic  = root_topicHassioArm;
+          char ZoneTopic[128];
           if (usePartitions)
-           {
-             sprintf( sTopic ,"%s/%d", root_topicHassioArm ,hassioStatus.Partition);
-           }
-          sendMQTT(sTopic,hassioStatus.stringArmStatus, true);  
+          {
+            sprintf(ZoneTopic, "%s/%d",root_topicHassioArm,hassioStatus.Partition);
+          }
+          else
+          {
+            sprintf(ZoneTopic, "%s",root_topicHassioArm);
+          }
+    
+          //char* sTopic  = root_topicHassioArm;
+          //if (usePartitions)
+           //{
+           //  sprintf( sTopic ,"%s/%d", root_topicHassioArm ,hassioStatus.Partition);
+          // }
+          sendMQTT(ZoneTopic,hassioStatus.stringArmStatus, true);  
         }
         if (HomeKit)
         {
           root["Armstatus"]=homekitStatus.intArmStatus;
           root["ArmStatusD"]=homekitStatus.stringArmStatus ;
-          root.printTo(output);
+          //root.printTo(output);
+          serializeJson(root,output);
           sendCharMQTT(root_topicArmHomekit,output, false); 
         }
 }
@@ -336,11 +369,19 @@ void processMessage( byte event, byte sub_event, byte partition , String dummy )
  
   if ((Hassio ) && (event == 1 || event == 0))
   {
-    char ZoneTopic[80];
-    String zone = String(root_topicHassio) + "/zone";
-    zone.toCharArray(ZoneTopic, 80);
-    zone = String(ZoneTopic) + String(sub_event);
-    zone.toCharArray(ZoneTopic, 80);
+    char ZoneTopic[128];
+    if (usePartitions)
+    {
+      sprintf(ZoneTopic, "%s/%d/zone%d",root_topicHassio,partition,sub_event);
+    }
+    else
+    {
+      sprintf(ZoneTopic, "%s/zone%d",root_topicHassio,sub_event);
+    }
+    
+    //zone.toCharArray(ZoneTopic, 80);
+    //zone = String(ZoneTopic) + String(sub_event);
+    //zone.toCharArray(ZoneTopic, 80);
 
     String zonestatus = event==1?"ON":"OFF";
 
@@ -350,13 +391,14 @@ void processMessage( byte event, byte sub_event, byte partition , String dummy )
   if ((HomeKit ) && (event == 1 || event == 0))
   {
     char output[128];
-    StaticJsonBuffer<128> jsonBuffer;
-    JsonObject& homekitmsg = jsonBuffer.createObject();
+    DynamicJsonDocument homekitmsg(128);
+    //StaticJsonBuffer<128> jsonBuffer;
+    //JsonObject& homekitmsg = jsonBuffer.createObject();
     homekitmsg["zone"]=sub_event;
     dummy.trim();
     homekitmsg["zoneName"]=String(dummy);
     homekitmsg["state"]=event==1?true:false;
-    homekitmsg.printTo(output);
+    serializeJson(homekitmsg,output);
     
     sendCharMQTT(root_topicArmHomekit,output,false); 
   }
@@ -364,8 +406,9 @@ void processMessage( byte event, byte sub_event, byte partition , String dummy )
   if (SendAllE0events)
   {
     char outputMQ[256];
-    StaticJsonBuffer<256> jsonBuffer;
-    JsonObject& root = jsonBuffer.createObject();
+     DynamicJsonDocument root(256);
+    //StaticJsonBuffer<256> jsonBuffer;
+    //JsonObject& root = jsonBuffer.createObject();
     root["event"]=event;
     root["sub_event"]=sub_event;
     root["partition"]=partition;
@@ -376,7 +419,8 @@ void processMessage( byte event, byte sub_event, byte partition , String dummy )
     }
     
     root["data"]=dummy;
-    root.printTo(outputMQ);
+    //root.printTo(outputMQ);
+    serializeJson(root,outputMQ);
     
     sendCharMQTT(root_topicOut,outputMQ,false); 
   }
@@ -422,6 +466,12 @@ void readSerial(){
 
     HTTP.handleClient();
     handleMqttKeepAlive();
+
+    
+    if (ArmStateRefresh >= 30 && millis() - lastReconnectAttempt > ArmStateRefresh*1000) {
+      lastReconnectAttempt = millis();
+      sendArmStatus();
+    }
       
   }                            
 {
@@ -611,12 +661,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   else if (data.Command == 0x91  )  {
     trc(F("Running ArmState"));
-    ArmState();
+    sendArmStatus();
   }
   else if (data.Command == 0x30)
   {
     trc(F("Command Setdate"));
-    //panelSetDate();
+    panelSetDate();
   }
   
   else if (data.Command != 0x00  )  {
@@ -687,47 +737,54 @@ byte getPanelCommand(String data){
 
 void panelSetDate(){
   
-  // dateTime = NTPch.getNTPtime(timezone, 1);
-  
-  // if (dateTime.valid)
-  // {
+    struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Debug.println("Failed to obtain time");
+    trc(F("ERROR getting NTP Date "));
+     sendMQTT(root_topicStatus,"{\"status\":\"ERROR getting NTP Date  \" }", false);
+    return;
+  }
+  else
+  {
     
-  //   byte actualHour = dateTime.hour;
-  //   byte actualMinute = dateTime.minute;
-  //   byte actualyear = (dateTime.year - 2000) & 0xFF ;
-  //   byte actualMonth = dateTime.month;
-  //   byte actualday = dateTime.day;
+  Debug.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+   //dateTime = NTPch.getNTPtime(timezone, 1);
+  
+   
+    
+     byte actualHour = timeinfo.tm_hour;
+     byte actualMinute = timeinfo.tm_min;
+     byte actualyear = (timeinfo.tm_year - 2000) & 0xFF ;
+     byte actualMonth = timeinfo.tm_mon;
+     byte actualday = timeinfo.tm_mday;
   
 
-  //   byte data[MessageLength] = {};
-  //   byte checksum;
-  //   memset(data, 0, sizeof(data));
+     byte data[MessageLength] = {};
+     byte checksum;
+     memset(data, 0, sizeof(data));
 
-  //   data[0] = 0x30;
-  //   data[4] = 0x21;         //Century
-  //   data[5] = actualyear;   //Year
-  //   data[6] = actualMonth;  //Month
-  //   data[7] = actualday;    //Day
-  //   data[8] = actualHour;   //Time
-  //   data[9] = actualMinute; // Minutes
-  //   data[33] = 0x05;
+     data[0] = 0x30;
+     data[4] = 0x21;         //Century
+     data[5] = actualyear;   //Year
+     data[6] = actualMonth;  //Month
+     data[7] = actualday;    //Day
+     data[8] = actualHour;   //Time
+     data[9] = actualMinute; // Minutes
+     data[33] = 0x05;
 
-  //   checksum = 0;
-  //   for (int x = 0; x < MessageLength - 1; x++)
-  //   {
-  //     checksum += data[x];
-  //   }
+     checksum = 0;
+     for (int x = 0; x < MessageLength - 1; x++)
+     {
+       checksum += data[x];
+     }
 
-  //   data[36] = checksumCalculate(checksum);
-  //   trc("sending setDate command to panel");
-  //   Serial.write(data, MessageLength);
-  //   readSerialQuick();
-    
-  // }else
-  // {
-  //   trc(F("ERROR getting NTP Date "));
-  //   sendMQTT(root_topicStatus,"{\"status\":\"ERROR getting NTP Date  \" }", false);
-  // }
+     data[36] = checksumCalculate(checksum);
+      trc("sending setDate command to panel");
+     //Debug.write(data, MessageLength);
+     readSerialQuick();
+  
+  } 
+
 }
 
 void ControlPanel(inPayload data){
@@ -804,9 +861,9 @@ void PanelStatus0(){
     int PowerSupplyDCVoltageLevel =inData[16];
     int BatteryDCVoltageLevel=inData[17];
 
-    
-        StaticJsonBuffer<256> jsonBuffer;
-        JsonObject& root = jsonBuffer.createObject();
+        DynamicJsonDocument root(256);
+        //StaticJsonBuffer<256> jsonBuffer;
+        //JsonObject& root = jsonBuffer.createObject();
         root["Timer_Loss"]=String(Timer_Loss);
         root["PowerTrouble"]=String(PowerTrouble);
         root["ACFailureTrouble"]=String(ACFailureTroubleIndicator);
@@ -816,18 +873,19 @@ void PanelStatus0(){
         root["BatteryTrouble"]=String(NoLowBatteryTroubleIndicator);
         root["ACInputDCVoltageLevel"]=String(ACInputDCVoltageLevel);
         char output[256];
-        root.printTo(output);
-        sendCharMQTT(root_topicOut,output ,false);  
+        serializeJson(root,output);
+        //root.printTo(output);
+        sendCharMQTT(root_topicStatus,output ,false);  
     
     String Zonename ="";
     int zcnt = 0;
         
     for (int i = 19 ; i <= 22;i++)
     {
-      
-      StaticJsonBuffer<256> jsonBuffer;
-        JsonObject& zonemq = jsonBuffer.createObject();
-     for (int j = 0 ; j <= 8;j++) 
+      DynamicJsonDocument zonemq(256);
+      //StaticJsonBuffer<256> jsonBuffer;
+      //  JsonObject& zonemq = jsonBuffer.createObject();
+     for (int j = 0 ; j < 8;j++) 
        {
          Zonename = "Z" + String(++zcnt);
 
@@ -838,17 +896,15 @@ void PanelStatus0(){
        
        }
        char Zonemq[256];
-        zonemq.printTo(Zonemq);
-        sendCharMQTT(root_topicOut,Zonemq,false); 
+        serializeJson(zonemq,Zonemq);
+        sendCharMQTT(root_topicStatus,Zonemq,false); 
     }
     
 
    
 }
 
-void ArmState(){
-    sendArmStatus();
-}
+
 
 void PanelStatus1(){
   byte data[MessageLength] = {};
@@ -882,9 +938,11 @@ void PanelStatus1(){
   bool SleepFlg=bitRead(inData[17],1);
   bool ArmFlg=bitRead(inData[17],0);
 
-    StaticJsonBuffer<256> jsonBuffer;
+    //StaticJsonBuffer<256> jsonBuffer;
+    //JsonObject& panelstatus1 = jsonBuffer.createObject();
+    DynamicJsonDocument panelstatus1(256);
     char panelst[256];
-        JsonObject& panelstatus1 = jsonBuffer.createObject();
+        
         panelstatus1["Fire"]=Fire;
         panelstatus1["Audible"]=Audible;
         panelstatus1["Silent"]=Silent;
@@ -894,8 +952,8 @@ void PanelStatus1(){
         panelstatus1["ArmFlg"]=ArmFlg;
         panelstatus1["zoneisbypassed"]=bool(bitRead(inData[18],3));
             
-        panelstatus1.printTo(panelst);
-        sendCharMQTT(root_topicOut,panelst,false);  
+        serializeJson(panelstatus1,panelst);
+        sendCharMQTT(root_topicStatus,panelst,false);  
 
      if (AlarmFlg)
     {
@@ -1029,9 +1087,12 @@ void doLogin(byte pass1, byte pass2){
 
 struct inPayload Decodejson(char *Payload){
   inPayload indata;
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject &root = jsonBuffer.parseObject(Payload);
-  if (!root.success())
+  //DynamicJsonBuffer jsonBuffer;
+  //JsonObject &root = jsonBuffer.parseObject(Payload);
+  DynamicJsonDocument root(256);
+  auto deserializeError = deserializeJson(root,Payload,256);
+
+  if (deserializeError)
   {
     indata = {0x00,0x00,0x00,0x00};
     trc("JSON parsing failed!");
@@ -1126,13 +1187,13 @@ boolean reconnect() {
 
 void setup_wifi(){
   
-    WiFiManagerParameter custom_mqtt_server("server", "mqtt server", Mqtt_ServerAddress, 40);
-    WiFiManagerParameter custom_mqtt_port("port", "mqtt port", Mqtt_ServerPort, 6);
+    ESP_WMParameter custom_mqtt_server("server", "mqtt server", Mqtt_ServerAddress, 40);
+    ESP_WMParameter custom_mqtt_port("port", "mqtt port", Mqtt_ServerPort, 6);
 
-     WiFiManagerParameter custom_MqttUserName("Username", "mqtt Username", Mqtt_Username, 40);
-     WiFiManagerParameter custom_MqttUserPassword("Password", "mqtt Password", Mqtt_Password, 40);
+     ESP_WMParameter custom_MqttUserName("Username", "mqtt Username", Mqtt_Username, 40);
+     ESP_WMParameter custom_MqttUserPassword("Password", "mqtt Password", Mqtt_Password, 40);
 
-    WiFiManager wifiManager;
+    ESP_WiFiManager wifiManager;
     if (ResetConfig)
     {
       trc(F("Resetting wifiManager"));
@@ -1183,8 +1244,10 @@ void setup_wifi(){
     //save the custom parameters to FS
     if (shouldSaveConfig) {
       trc(F("saving config"));
-      DynamicJsonBuffer jsonBuffer;
-      JsonObject& json = jsonBuffer.createObject();
+      //DynamicJsonBuffer jsonBuffer;
+      //JsonObject& json = jsonBuffer.createObject();
+      DynamicJsonDocument json(256);
+
       json["mqtt_server"] = Mqtt_ServerAddress;
       json["mqtt_port"] = Mqtt_ServerPort;
       json["mqtt_user"] = Mqtt_Username;
@@ -1195,8 +1258,8 @@ void setup_wifi(){
         trc(F("failed to open config file for writing"));
       }
   
-      json.printTo(ParadoxSerial);
-      json.printTo(configFile);
+      serializeJson(json,ParadoxSerial);
+      serializeJson(json,configFile);
       configFile.close();
       //end save
     }
@@ -1242,10 +1305,13 @@ void mountfs(){
         std::unique_ptr<char[]> buf(new char[size]);
 
         configFile.readBytes(buf.get(), size);
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject& json = jsonBuffer.parseObject(buf.get());
-        json.printTo(ParadoxSerial);
-        if (json.success()) {
+        //DynamicJsonBuffer jsonBuffer;
+        //JsonObject& json = jsonBuffer.parseObject(buf.get());
+        DynamicJsonDocument json(1024);
+        auto deserializeError = deserializeJson(json, buf.get(), size);
+
+        serializeJson(json,ParadoxSerial);
+        if (!deserializeError) {
           trc(F("\nparsed json"));
 
           strcpy(Mqtt_ServerAddress, json["mqtt_server"]);
@@ -1273,6 +1339,10 @@ void mountfs(){
 
 
 void setup() {
+
+  
+
+
   SetupMqttServer();
   SetupMqttTopics();
   pinMode(LED, OUTPUT);
@@ -1281,7 +1351,9 @@ void setup() {
 
   
   ParadoxSerial.begin(9600,SERIAL_8N1);
-  GSMModule.begin(9600,SERIAL_8N1, GSMModuleRX, GSMModuleTX);
+  #ifdef ParadoxGSMInstalled
+    GSMModule.begin(9600,SERIAL_8N1, GSMModuleRX, GSMModuleTX);
+  #endif
   Debug.begin(9600,SERIAL_8N1);
 
   
@@ -1312,6 +1384,9 @@ void setup() {
   sendCharMQTT(root_topicStatus, readymsg, false);
   lastReconnectAttempt = 0;
   serial_flush_buffer();
+  configTime(gmtOffset_sec, 0, ntpServer);
+  PanelStatus1();
+  sendMQTT(root_topicStatus, "{\"status\":\"Program ready\"}" , false);
     
 }
 
@@ -1324,16 +1399,14 @@ void loop() {
       serial_flush_buffer(); 
       
     }
+
+  
 }
 
 
 String getpage(){
 String page = FPSTR(HTTP_HEAD);
   page.replace("{v}", "Info");
-  page += FPSTR(HTTP_SCRIPT);
-  page += FPSTR(HTTP_STYLE);
-  
-  page += FPSTR(HTTP_HEAD_END);
   page += F("<dl>");
   page += F("<dt>Hostname</dt><dd>");
   page += Hostname;
@@ -1393,7 +1466,7 @@ String page = FPSTR(HTTP_HEAD);
   page += F("</dd>");
 
   page += F("</dl>");
-  page += FPSTR(HTTP_END);
+  
 return page;
 
 }
