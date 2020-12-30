@@ -1,21 +1,14 @@
-# ParadoxRs232toMqtt
+# ParadoxMqtt32
 
-This project uses a WEMOS ESP8266 to read the events of the serial bus on Paradox alarm systems and send them to an MQTT server
+This project uses an ESP32 to read the events of the serial bus on Paradox alarm systems and send them to an MQTT server
 
 ## Making a connection
 
-There are 2 ways to connect the devices together:
-- Alarm system serial to WEMOS through RX/TX<br>
-- paradoxTX into GPIO15 (WEMOS D8), paradoxRX to GPIO13 (WEMOS D7), using serial_swap 1
+Connect the panel through serial connection:
+- Alarm system serial to ESP32 using RX2/TX2 of ESP32<br>
+
 
 ## Arduino IDE settings
-
-Edit the _PubSubClient.h_ header file and change _MQTT_MAX_PACKET_SIZE_ to _256_
-
-Libraries:
-- Arduino Core 2.4.1
-- WifiManager by tzapu 0.12.0
-- PubSubClient by Nick O`Leary 2.6.0
 
 Set the _Hassio_ flag to _1_ for Home assistant, and check out the wiki (Home Assistant in V2)
         
@@ -23,23 +16,23 @@ The 37 byte message is broken down into a json message with "Event Group" and "S
 
 See the wiki for more info on Groups and Sub-groups
 
-After flashing the WEMOS board, connect to it's Wi-Fi (_paradoxdCTL_), open the 192.168.4.1 IP address in your browser, input your Wi-Fi credentials and MQTT server address. That's all.  
+After flashing the ESP board, connect to it's Wi-Fi (_paradox32CTL_), open the 192.168.4.1 IP address in your browser, input your Wi-Fi credentials and MQTT server address. That's all.  
 
 ### MQTT Topics 
 
 | Topic              | Notes                     |
 |--------------------|---------------------------|
-| paradoxdCTL/out    | All alarm event messages  |
-| paradoxdCTL/status | The program messages      |
-| paradoxdCTL/in     | Input topic               |
+| paradox32CTL/out    | All alarm event messages  |
+| paradox32CTL/status | The program messages      |
+| paradox32CTL/in     | Input topic               |
 
 ### HomeAssistant MQTT Topics
 
 | Topic                        | Notes                                                     |
 |------------------------------|-----------------------------------------------------------|
-| paradoxdCTL/hassio/Arm/zoneX | Where x is zone number from 1-32                          |
-| paradoxdCTL/hassio/Arm/zoneX | Gives values ON/OFF                                       |
-| paradoxdCTL/hassio/Arm       | Gives values: disarmed, armed_home, armed_away, triggered |
+| paradox32CTL/hassio/zoneX | Where x is zone number from 1-32                          |
+| paradox32CTL/hassio/zoneX | Gives values ON/OFF                                       |
+| paradox32CTL/hassio/Arm       | Gives values: disarmed, armed_home, armed_away, triggered |
 
 ### Sending commands
 
