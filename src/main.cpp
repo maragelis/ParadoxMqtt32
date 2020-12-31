@@ -18,11 +18,13 @@ bool PanelConnected =false;
 bool PanelError = false;
 bool RunningCommand=false;
 bool JsonParseError=false;
+bool initState=false;
  
 char inData[38]; // Allocate some space for the string
 byte pindex = 0; // Index into array; where to store the character
 
 long lastReconnectAttempt = 0;
+long statusrefresh = 0;
 long armStatusDelay =0;
 
 
@@ -39,6 +41,17 @@ struct inPayload
   byte Subcommand;
  } ;
  
+ typedef struct {
+  bool Fire;
+  bool Audible;
+  bool Silent;
+  bool AlarmFlg;
+  bool StayFlg;
+  bool SleepFlg;
+  bool ArmFlg;
+  bool zoneisbypassed;
+  int Partition;
+ } PanelStatus1msg;
 
  typedef struct {
      int intArmStatus;
@@ -47,10 +60,15 @@ struct inPayload
      int sent;
  } paradoxArm;
 
- paradoxArm hassioStatus;
+ //paradoxArm hassioStatus0;
+ //paradoxArm hassioStatus1;
  
- paradoxArm homekitStatus;
+ //paradoxArm homekitStatus0;
+ //paradoxArm homekitStatus1;
  
+ paradoxArm hassioStatus[2];
+ paradoxArm homekitStatus[2];
+ PanelStatus1msg _PanelStatus1msg;
 
 
 
@@ -241,34 +259,40 @@ void readSerialQuick(){
 
 void updateArmStatus(byte event, byte sub_event, byte partition){
   
-  homekitStatus.Partition  = partition;
-  hassioStatus.Partition = partition;
+  homekitStatus[partition].Partition = partition;
+  hassioStatus[partition].Partition = partition;
+  
+
+ 
+
   if (event == 2)
   {
     
     switch (sub_event)
     {
       case 4:
-        hassioStatus.stringArmStatus = "triggered";
-        homekitStatus.stringArmStatus = "ALARM_TRIGGERED";
-        homekitStatus.intArmStatus=4;
+        hassioStatus[partition].stringArmStatus = "triggered";
+        homekitStatus[partition].stringArmStatus = "ALARM_TRIGGERED";
+        homekitStatus[partition].intArmStatus=4;
         
        
         
       break;
 
       case 11:
-        hassioStatus.stringArmStatus = "disarmed";
-        homekitStatus.stringArmStatus = "DISARMED";
-        homekitStatus.intArmStatus = 3;
+      if (TRACE)
+      Debug.println("Disarmed set by updateArmStatus");
+        hassioStatus[partition].stringArmStatus = "disarmed";
+        homekitStatus[partition].stringArmStatus = "DISARMED";
+        homekitStatus[partition].intArmStatus = 3;
         
         
         break;
 
       case 12:
-         hassioStatus.stringArmStatus = "armed_away";
-         homekitStatus.stringArmStatus = "AWAY_ARM";
-         homekitStatus.intArmStatus = 1;
+         hassioStatus[partition].stringArmStatus = "armed_away";
+         homekitStatus[partition].stringArmStatus = "AWAY_ARM";
+         homekitStatus[partition].intArmStatus = 1;
          
          
         break;
@@ -281,17 +305,17 @@ void updateArmStatus(byte event, byte sub_event, byte partition){
     if (sub_event == 3)
     {
       
-      hassioStatus.stringArmStatus = "armed_home";
-      homekitStatus.stringArmStatus = "STAY_ARM";
-      homekitStatus.intArmStatus = 0;
+      hassioStatus[partition].stringArmStatus = "armed_home";
+      homekitStatus[partition].stringArmStatus = "STAY_ARM";
+      homekitStatus[partition].intArmStatus = 0;
       
     }
     else if ( sub_event == 4)
     {
       
-      hassioStatus.stringArmStatus = "armed_home";
-      homekitStatus.stringArmStatus = "NIGHT_ARM";
-      homekitStatus.intArmStatus = 2; 
+      hassioStatus[partition].stringArmStatus = "armed_home";
+      homekitStatus[partition].stringArmStatus = "NIGHT_ARM";
+      homekitStatus[partition].intArmStatus = 2; 
     }
   }
   
@@ -317,7 +341,9 @@ void sendMQTT(String topicNameSend, String dataStr,bool  retain){
 
 void sendArmStatus(){
   char output[128];
-  DynamicJsonDocument root(128);
+  DynamicJsonDocument root(256);
+  DynamicJsonDocument p1(128);
+  DynamicJsonDocument p2(128);
   //StaticJsonBuffer<128> jsonBuffer;
   //JsonObject& root = jsonBuffer.createObject();
         if (Hassio)
@@ -325,7 +351,7 @@ void sendArmStatus(){
           char ZoneTopic[128];
           if (usePartitions)
           {
-            sprintf(ZoneTopic, "%s/%d",root_topicHassioArm,hassioStatus.Partition);
+            sprintf(ZoneTopic, "%s/%d",root_topicHassioArm,hassioStatus[0].Partition);
           }
           else
           {
@@ -337,12 +363,19 @@ void sendArmStatus(){
            //{
            //  sprintf( sTopic ,"%s/%d", root_topicHassioArm ,hassioStatus.Partition);
           // }
-          sendMQTT(ZoneTopic,hassioStatus.stringArmStatus, true);  
+          sendMQTT(ZoneTopic,hassioStatus[0].stringArmStatus, true);  
         }
         if (HomeKit)
         {
-          root["Armstatus"]=homekitStatus.intArmStatus;
-          root["ArmStatusD"]=homekitStatus.stringArmStatus ;
+          p1["Armstatus"]=homekitStatus[0].intArmStatus;
+          p1["ArmStatusD"]=homekitStatus[0].stringArmStatus ;
+          p1["Partition"]=homekitStatus[0].Partition;
+          
+           p2["Armstatus"]=homekitStatus[1].intArmStatus;
+          p2["ArmStatusD"]=homekitStatus[1].stringArmStatus ;
+          p2["Partition"]=homekitStatus[1].Partition;
+          root.add(p1);
+          root.add(p2);
           //root.printTo(output);
           serializeJson(root,output);
           sendCharMQTT(root_topicArmHomekit,output, false); 
@@ -359,10 +392,10 @@ void processMessage( byte event, byte sub_event, byte partition , String dummy )
   //Dont send the arm event now send it on next message, because it might be updated to sleep or stay.
   if ((Hassio || HomeKit) &&  (event != 2 and sub_event != 12) )  
   {  
-    if (homekitStatus.sent != homekitStatus.intArmStatus)
+    if (homekitStatus[partition].sent != homekitStatus[partition].intArmStatus)
     {
       sendArmStatus();
-      homekitStatus.sent = homekitStatus.intArmStatus;
+      homekitStatus[partition].sent = homekitStatus[partition].intArmStatus;
       }
   }
 
@@ -397,6 +430,7 @@ void processMessage( byte event, byte sub_event, byte partition , String dummy )
     homekitmsg["zone"]=sub_event;
     dummy.trim();
     homekitmsg["zoneName"]=String(dummy);
+    homekitmsg["partition"]=partition;
     homekitmsg["state"]=event==1?true:false;
     serializeJson(homekitmsg,output);
     
@@ -468,9 +502,10 @@ void readSerial(){
     handleMqttKeepAlive();
     
     
-    if (ArmStateRefresh >= 30 && millis() - lastReconnectAttempt > ArmStateRefresh*1000) {
-      lastReconnectAttempt = millis();
+    if (ArmStateRefresh >= 30 && millis() - statusrefresh > ArmStateRefresh*1000) {
+      statusrefresh = millis();
       sendArmStatus();
+     
     }
       
   }                            
@@ -752,19 +787,20 @@ void panelSetDate(){
   
    
     
-     byte actualHour = timeinfo.tm_hour;
-     byte actualMinute = timeinfo.tm_min;
-     byte actualyear = (timeinfo.tm_year - 2000) & 0xFF ;
-     byte actualMonth = timeinfo.tm_mon;
-     byte actualday = timeinfo.tm_mday;
-  
+     byte actualHour = timeinfo.tm_hour  & 0xFF;
+     byte actualMinute = timeinfo.tm_min  & 0xFF;
+     byte actualyear = (timeinfo.tm_year - 100) & 0xFF ;
+     byte actualMonth = (timeinfo.tm_mon+1)  & 0xFF;
+     byte actualday = timeinfo.tm_mday  & 0xFF;
+
+    
 
      byte data[MessageLength] = {};
      byte checksum;
      memset(data, 0, sizeof(data));
 
      data[0] = 0x30;
-     data[4] = 0x21;         //Century
+     data[4] = 21 & 0xFF;         //Century
      data[5] = actualyear;   //Year
      data[6] = actualMonth;  //Month
      data[7] = actualday;    //Day
@@ -780,7 +816,29 @@ void panelSetDate(){
 
      data[36] = checksumCalculate(checksum);
       trc("sending setDate command to panel");
-     //Debug.write(data, MessageLength);
+      ParadoxSerial.write(data, MessageLength);
+  
+if (TRACE)
+    {
+      Debug.println(timeinfo.tm_hour);
+      Debug.println(timeinfo.tm_min);
+      Debug.println(timeinfo.tm_year);
+       Debug.println(timeinfo.tm_yday);
+       Debug.println(timeinfo.tm_wday);
+      Debug.println(timeinfo.tm_mon);
+      Debug.println(timeinfo.tm_mday);
+      Debug.println("***************");
+    
+
+      for (int i=0;i<MessageLength;i++)
+        {
+          Debug.print("Address-");
+          Debug.print(i);
+          Debug.print("=");
+          Debug.println(data[i], HEX);
+
+        }
+    } 
      readSerialQuick();
   
   } 
@@ -906,6 +964,68 @@ void PanelStatus0(){
 
 
 
+void createPabelstatus1Message()
+{
+  DynamicJsonDocument panelstatus1(256);
+    char panelst[256];
+     panelstatus1["Partition"]=_PanelStatus1msg.Partition;
+        panelstatus1["Fire"]=_PanelStatus1msg.Fire;
+        panelstatus1["Audible"]=_PanelStatus1msg.Audible;
+        panelstatus1["Silent"]=_PanelStatus1msg.Silent;
+        panelstatus1["AlarmFlg"]=_PanelStatus1msg.AlarmFlg;
+        panelstatus1["StayFlg"]=_PanelStatus1msg.StayFlg;
+        panelstatus1["SleepFlg"]=_PanelStatus1msg.SleepFlg;
+        panelstatus1["ArmFlg"]=_PanelStatus1msg.ArmFlg;
+        panelstatus1["zoneisbypassed"]=_PanelStatus1msg.zoneisbypassed;
+      serializeJson(panelstatus1,panelst);
+        sendCharMQTT(root_topicStatus,panelst,false);  
+
+        hassioStatus[_PanelStatus1msg.Partition].Partition=_PanelStatus1msg.Partition;
+        homekitStatus[_PanelStatus1msg.Partition].Partition=_PanelStatus1msg.Partition;
+      
+       if (_PanelStatus1msg.AlarmFlg)
+    {
+
+       hassioStatus[_PanelStatus1msg.Partition].stringArmStatus="triggered";
+       homekitStatus[_PanelStatus1msg.Partition].stringArmStatus="ALARM_TRIGGERED";
+       homekitStatus[_PanelStatus1msg.Partition].intArmStatus=4;
+    }
+    else if (_PanelStatus1msg.StayFlg)
+    {
+       hassioStatus[_PanelStatus1msg.Partition].stringArmStatus="armed_home";
+       homekitStatus[_PanelStatus1msg.Partition].stringArmStatus="STAY_ARM";
+       homekitStatus[_PanelStatus1msg.Partition].intArmStatus=0;
+    }else if (_PanelStatus1msg.SleepFlg)
+    {
+        hassioStatus[_PanelStatus1msg.Partition].stringArmStatus="armed_home";
+       homekitStatus[_PanelStatus1msg.Partition].stringArmStatus="NIGHT_ARM";
+       homekitStatus[_PanelStatus1msg.Partition].intArmStatus=2;
+    }
+    else if (_PanelStatus1msg.ArmFlg)
+    {
+        hassioStatus[_PanelStatus1msg.Partition].stringArmStatus = "armed_away";
+         homekitStatus[_PanelStatus1msg.Partition].stringArmStatus = "AWAY_ARM";
+         homekitStatus[_PanelStatus1msg.Partition].intArmStatus = 1;
+    }
+    else if (!_PanelStatus1msg.SleepFlg && !_PanelStatus1msg.StayFlg && !_PanelStatus1msg.ArmFlg)
+    {
+      if (TRACE)
+        Debug.println("Disarmed set by createPabelstatus1Message");
+        hassioStatus[_PanelStatus1msg.Partition].stringArmStatus = "disarmed";
+        homekitStatus[_PanelStatus1msg.Partition].stringArmStatus = "DISARMED";
+        homekitStatus[_PanelStatus1msg.Partition].intArmStatus = 3;
+    }
+    
+    else
+    {
+        hassioStatus[_PanelStatus1msg.Partition].stringArmStatus = "unknown";
+        homekitStatus[_PanelStatus1msg.Partition].stringArmStatus = "unknown";
+        homekitStatus[_PanelStatus1msg.Partition].intArmStatus = 99;
+    }
+
+}
+
+
 void PanelStatus1(){
   byte data[MessageLength] = {};
   byte checksum;
@@ -930,69 +1050,31 @@ void PanelStatus1(){
   
   readSerialQuick();
 
-  bool Fire=bitRead(inData[17],7);
-  bool Audible=bitRead(inData[17],6);
-  bool Silent=bitRead(inData[17],5);
-  bool AlarmFlg=bitRead(inData[17],4);
-  bool StayFlg=bitRead(inData[17],2);
-  bool SleepFlg=bitRead(inData[17],1);
-  bool ArmFlg=bitRead(inData[17],0);
+  
+ _PanelStatus1msg.Partition=0;
+  _PanelStatus1msg.Fire=bitRead(inData[17],7);
+  _PanelStatus1msg.Audible=bitRead(inData[17],6);
+  _PanelStatus1msg.Silent=bitRead(inData[17],5);
+  _PanelStatus1msg.AlarmFlg=bitRead(inData[17],4);
+  _PanelStatus1msg.StayFlg=bitRead(inData[17],2);
+  _PanelStatus1msg.SleepFlg=bitRead(inData[17],1);
+  _PanelStatus1msg.ArmFlg=bitRead(inData[17],0);
+  _PanelStatus1msg.zoneisbypassed=bool(bitRead(inData[18],3));
 
-    //StaticJsonBuffer<256> jsonBuffer;
-    //JsonObject& panelstatus1 = jsonBuffer.createObject();
-    DynamicJsonDocument panelstatus1(256);
-    char panelst[256];
-        
-        panelstatus1["Fire"]=Fire;
-        panelstatus1["Audible"]=Audible;
-        panelstatus1["Silent"]=Silent;
-        panelstatus1["AlarmFlg"]=AlarmFlg;
-        panelstatus1["StayFlg"]=StayFlg;
-        panelstatus1["SleepFlg"]=SleepFlg;
-        panelstatus1["ArmFlg"]=ArmFlg;
-        panelstatus1["zoneisbypassed"]=bool(bitRead(inData[18],3));
-            
-        serializeJson(panelstatus1,panelst);
-        sendCharMQTT(root_topicStatus,panelst,false);  
+  createPabelstatus1Message();
+ _PanelStatus1msg.Partition=1;
+  _PanelStatus1msg.Fire=bitRead(inData[21],7);
+  _PanelStatus1msg.Audible=bitRead(inData[21],6);
+  _PanelStatus1msg.Silent=bitRead(inData[21],5);
+  _PanelStatus1msg.AlarmFlg=bitRead(inData[21],4);
+  _PanelStatus1msg.StayFlg=bitRead(inData[21],2);
+  _PanelStatus1msg.SleepFlg=bitRead(inData[21],1);
+  _PanelStatus1msg.ArmFlg=bitRead(inData[21],0);
+  _PanelStatus1msg.zoneisbypassed=bool(bitRead(inData[22],3));
 
-     if (AlarmFlg)
-    {
-       hassioStatus.stringArmStatus="triggered";
-       homekitStatus.stringArmStatus="ALARM_TRIGGERED";
-       homekitStatus.intArmStatus=4;
-    }
-    else if (StayFlg)
-    {
-       hassioStatus.stringArmStatus="armed_home";
-       homekitStatus.stringArmStatus="STAY_ARM";
-       homekitStatus.intArmStatus=0;
-    }else if (SleepFlg)
-    {
-        hassioStatus.stringArmStatus="armed_home";
-       homekitStatus.stringArmStatus="NIGHT_ARM";
-       homekitStatus.intArmStatus=2;
-    }
-    else if (ArmFlg)
-    {
-        hassioStatus.stringArmStatus = "armed_away";
-         homekitStatus.stringArmStatus = "AWAY_ARM";
-         homekitStatus.intArmStatus = 1;
-    }
-    else if (!SleepFlg && !StayFlg && !ArmFlg)
-    {
-        hassioStatus.stringArmStatus = "disarmed";
-        homekitStatus.stringArmStatus = "DISARMED";
-        homekitStatus.intArmStatus = 3;
-    }
+  createPabelstatus1Message(); 
     
-    else
-    {
-        hassioStatus.stringArmStatus = "unknown";
-        homekitStatus.stringArmStatus = "unknown";
-        homekitStatus.intArmStatus = 99;
-    }
-    //sendMQTT(root_topicArmStatus,retval);
-    sendArmStatus();
+  sendArmStatus();
 }
 
 
@@ -1391,7 +1473,7 @@ void setup() {
       Debug.println("\nEnd");
     })
     .onProgress([](unsigned int progress, unsigned int total) {
-      Debug.printf("Progress: %u%%\r", (progress / (total / 100)));
+      //Debug.printf("Progress: %u%%\r", (progress / (total / 100)));
     })
     .onError([](ota_error_t error) {
       Serial.printf("Error[%u]: ", error);
@@ -1412,7 +1494,7 @@ void setup() {
   lastReconnectAttempt = 0;
   serial_flush_buffer();
   configTime(gmtOffset_sec, 0, ntpServer);
-  PanelStatus1();
+  
   sendMQTT(root_topicStatus, "{\"status\":\"Panel Ready\"}" , false);
     
 }
