@@ -2,6 +2,7 @@
 #define main_h
 
 #include <Arduino.h>
+#include <stdio.h>
 #include <ArduinoOTA.h>
 #include <ArduinoJson.h>
 #include <FS.h>   

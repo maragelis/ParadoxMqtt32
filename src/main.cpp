@@ -1185,10 +1185,12 @@ struct inPayload Decodejson(char *Payload){
     char charpass1[4];
     char charpass2[4];
     char charsubcommand[4];
+   
     
     String password = root["password"];
     String command = root["Command"];
     String subcommand = root["Subcommand"];
+    
 
     String pass1 = password.substring(0, 2);
     String pass2 = password.substring(2, 4);
@@ -1200,20 +1202,36 @@ struct inPayload Decodejson(char *Payload){
     pass2.toCharArray(charpass2, 4);
     subcommand.toCharArray(charsubcommand,4);
 
-    unsigned long number1 = strtoul(charpass1, nullptr, 16);
-    unsigned long number2 = strtoul(charpass2, nullptr, 16);
-    unsigned long number3 = strtoul(charsubcommand, nullptr, 16);
+    unsigned long number1 = strtoul(charpass1, NULL, 16);
+    unsigned long number2 = strtoul(charpass2, NULL, 16);
+    unsigned long number3 = strtoul(charsubcommand, NULL, 0);
+    
+    
+
 
     if (number2 < 10)
-      number2 = number2 + 160;
+     number2 = number2 + 160;
 
     if (number1 < 10)
       number1 = number1 + 160;
 
+   
 
     byte PanelPassword1 = number1 & 0xFF; 
     byte PanelPassword2 = number2 & 0xFF; 
     byte SubCommand = number3 & 0xFF;
+
+if (TRACE)
+{
+    Debug.println("*******************");
+    Debug.println(charpass1);
+    Debug.println(charpass2);
+    Debug.println(number1);
+    Debug.println(number2);
+    
+    Debug.println(PanelPassword1,HEX);
+    Debug.println(PanelPassword2,HEX);
+}
 
     byte CommandB = getPanelCommand(command) ;
   
