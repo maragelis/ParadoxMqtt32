@@ -1495,7 +1495,7 @@ void setup() {
   serial_flush_buffer();
   configTime(gmtOffset_sec, 0, ntpServer);
   
-  sendMQTT(root_topicStatus, "{\"status\":\"Panel Ready\"}" , false);
+  sendMQTT(root_topicStatus, "{\"status\":\"System Ready\"}" , false);
     
 }
 
