@@ -340,45 +340,46 @@ void sendMQTT(String topicNameSend, String dataStr,bool  retain){
 }
 
 void sendArmStatus(){
-  char output[128];
-  DynamicJsonDocument root(256);
-  DynamicJsonDocument p1(128);
-  DynamicJsonDocument p2(128);
+  char output[256];
+  DynamicJsonDocument root(128);
+  
+  char ZoneTopic[128];
   //StaticJsonBuffer<128> jsonBuffer;
   //JsonObject& root = jsonBuffer.createObject();
         if (Hassio)
         {
-          char ZoneTopic[128];
+          
+          sprintf(ZoneTopic, "%s/%d",root_topicHassioArm,hassioStatus[0].Partition);
+          sendMQTT(ZoneTopic,hassioStatus[0].stringArmStatus, true);  
           if (usePartitions)
           {
-            sprintf(ZoneTopic, "%s/%d",root_topicHassioArm,hassioStatus[0].Partition);
+           
+            sprintf(ZoneTopic, "%s/%d",root_topicHassioArm,hassioStatus[1].Partition);
+            sendMQTT(ZoneTopic,hassioStatus[1].stringArmStatus, true);  
+
           }
-          else
-          {
-            sprintf(ZoneTopic, "%s",root_topicHassioArm);
-          }
-    
-          //char* sTopic  = root_topicHassioArm;
-          //if (usePartitions)
-           //{
-           //  sprintf( sTopic ,"%s/%d", root_topicHassioArm ,hassioStatus.Partition);
-          // }
-          sendMQTT(ZoneTopic,hassioStatus[0].stringArmStatus, true);  
+          
+              
         }
         if (HomeKit)
         {
-          p1["Armstatus"]=homekitStatus[0].intArmStatus;
-          p1["ArmStatusD"]=homekitStatus[0].stringArmStatus ;
-          p1["Partition"]=homekitStatus[0].Partition;
-          
-           p2["Armstatus"]=homekitStatus[1].intArmStatus;
-          p2["ArmStatusD"]=homekitStatus[1].stringArmStatus ;
-          p2["Partition"]=homekitStatus[1].Partition;
-          root.add(p1);
-          root.add(p2);
-          //root.printTo(output);
+          root["Armstatus"]=homekitStatus[0].intArmStatus;
+          root["ArmStatusD"]=homekitStatus[0].stringArmStatus ;
+          sprintf(ZoneTopic, "%s/%d",root_topicArmHomekit,homekitStatus[0].Partition);
           serializeJson(root,output);
-          sendCharMQTT(root_topicArmHomekit,output, false); 
+          sendCharMQTT(ZoneTopic,output, false); 
+          
+          //root.printTo(output);
+          if (usePartitions)
+          {
+            root["Armstatus"]=homekitStatus[1].intArmStatus;
+            root["ArmStatusD"]=homekitStatus[1].stringArmStatus ;
+           // p2["Partition"]=homekitStatus[1].Partition;          
+            sprintf(ZoneTopic, "%s/%d",root_topicArmHomekit,homekitStatus[1].Partition);
+            serializeJson(root,output);
+            sendCharMQTT(ZoneTopic,output, false); 
+          }
+          
         }
 }
 
@@ -931,35 +932,31 @@ void PanelStatus0(){
         root["BatteryTrouble"]=String(NoLowBatteryTroubleIndicator);
         root["ACInputDCVoltageLevel"]=String(ACInputDCVoltageLevel);
         char output[256];
+        
         serializeJson(root,output);
         //root.printTo(output);
-        sendCharMQTT(root_topicStatus,output ,false);  
+        char topic[128];
+        sprintf(topic,"%s/PanelStatus0",root_topicStatus);
+        sendCharMQTT(topic,output ,false);  
     
     String Zonename ="";
     int zcnt = 0;
-        
+    
+    
+    sprintf(topic,"%s/ZoneStatus",root_topicStatus);
     for (int i = 19 ; i <= 22;i++)
     {
-      DynamicJsonDocument zonemq(256);
-      //StaticJsonBuffer<256> jsonBuffer;
-      //  JsonObject& zonemq = jsonBuffer.createObject();
-     for (int j = 0 ; j < 8;j++) 
-       {
-         Zonename = "Z" + String(++zcnt);
-
-       
-        zonemq[Zonename] =  bitRead(inData[i],j);
+      DynamicJsonDocument zoneJson(256);
+        strcpy(output,"");
+        for (int j = 0 ; j < 8;j++) 
+        {
+            Zonename = "Z" + String(++zcnt);       
+            zoneJson[Zonename] =  bitRead(inData[i],j);
+        }       
+        serializeJson(zoneJson,output);        
+        sendCharMQTT(topic,output,false); 
         
-        //trc (retval);
-       
-       }
-       char Zonemq[256];
-        serializeJson(zonemq,Zonemq);
-        sendCharMQTT(root_topicStatus,Zonemq,false); 
     }
-    
-
-   
 }
 
 
@@ -978,7 +975,9 @@ void createPabelstatus1Message()
         panelstatus1["ArmFlg"]=_PanelStatus1msg.ArmFlg;
         panelstatus1["zoneisbypassed"]=_PanelStatus1msg.zoneisbypassed;
       serializeJson(panelstatus1,panelst);
-        sendCharMQTT(root_topicStatus,panelst,false);  
+        char topic[128];
+        sprintf(topic,"%s/%d/PanelStatus1",root_topicStatus,_PanelStatus1msg.Partition);
+        sendCharMQTT(topic,panelst,false);  
 
         hassioStatus[_PanelStatus1msg.Partition].Partition=_PanelStatus1msg.Partition;
         homekitStatus[_PanelStatus1msg.Partition].Partition=_PanelStatus1msg.Partition;
