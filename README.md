@@ -17,6 +17,10 @@ The 37 byte message is broken down into a json message with "Event Group" and "S
 See the wiki for more info on Groups and Sub-groups
 
 After flashing the ESP board, connect to it's Wi-Fi (_paradox32CTL_), open the 192.168.4.1 IP address in your browser, input your Wi-Fi credentials and MQTT server address. That's all.  
+## GSM-GPRS Support
+No need to loose your gsm/gprs dialer, added support for second serial  RX3/TX3 used as a passthrough serial .
+SOS. Still havent tested as I dont have a dialer. 
+Any testing will be helpfull.
 
 ### MQTT Topics 
 
@@ -77,6 +81,8 @@ A command can be any of the following:
 4. Moved Status messages command to new topics under topic/status
 5. Added partition to topics 
 6. Many bugs squashed.
+7. Added support for GSM-GPRS dialer using second Serial RX3/TX3 (GPIO 26-27).
+
 
 
 20200126: 
