@@ -4,8 +4,8 @@ This project uses an ESP32 to read the events of the serial bus on Paradox alarm
 
 ## Making a connection
 
-Connect the panel through serial connection:
-- Alarm system serial to ESP32 using RX2/TX2 of ESP32<br>
+Connect the panel:
+-Connect Alarm system serial to ESP32 using RX2/TX2 of ESP32<br>
 
 
 ## Arduino IDE settings
@@ -28,11 +28,13 @@ After flashing the ESP board, connect to it's Wi-Fi (_paradox32CTL_), open the 1
 
 ### HomeAssistant MQTT Topics
 
-| Topic                        | Notes                                                     |
-|------------------------------|-----------------------------------------------------------|
-| paradox32CTL/hassio/zoneX | Where x is zone number from 1-32                          |
-| paradox32CTL/hassio/zoneX | Gives values ON/OFF                                       |
-| paradox32CTL/hassio/Arm       | Gives values: disarmed, armed_home, armed_away, triggered |
+| Topic                       | Notes                                                     |
+|-----------------------------|-----------------------------------------------------------|
+| paradox32CTL/hassio/y/zoneX | Where x is zone number from 1-32                          |
+| paradox32CTL/hassio/y/zoneX | Gives values ON/OFF                                       |
+| paradox32CTL/hassio/Arm/y   | Gives values: disarmed, armed_home, armed_away, triggered |
+    y is the partition always 0 in single partition systems
+
 
 ### Sending commands
 
@@ -68,6 +70,13 @@ A command can be any of the following:
 | panelstatus      | panel voltage and battery data |
 
 ### Release Logs
+202012
+1. Fixed partition reporting
+2. Fixed bypass command not bypassing zones above 10
+3. Fixed Setdate command, uses NTP to get date and sets panel date time.
+4. Moved Status messages command to new topics under topic/status
+5. Added partition to topics 
+
 
 20200126: 
 1. Added ArmStatus: pending when exit delay 
