@@ -64,10 +64,10 @@ A command can be any of the following:
 	
 | Main Command     | Subcommand                     |
 |------------------|--------------------------------|
-| arm,sleep,disarm | partition                      |
-| bypass           | The zone number from 0 to 31   |
-| panelstatus      | panel data                     |
-| panelstatus      | panel voltage and battery data |
+| arm,sleep,disarm | 0-1 partition                  |
+| bypass           | 0-31 zone number -1   |
+| panelstatus      | '0' panel data                 |
+| panelstatus      | '1' Partition state & zone status|
 
 ### Release Logs
 202012
