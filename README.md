@@ -76,6 +76,7 @@ A command can be any of the following:
 3. Fixed Setdate command, uses NTP to get date and sets panel date time.
 4. Moved Status messages command to new topics under topic/status
 5. Added partition to topics 
+6. Many bugs squashed.
 
 
 20200126: 
