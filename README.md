@@ -114,6 +114,8 @@ Continue reading the wiki for more information.
 1. Add homekit support
 2. Move serial read loop to core#2
 3. Add Mqtt send queue and move mqtt message sending to core#2
+4. Add support for sim700 GSM so project can be used as gsm dialer.
+5. Add ademco signaling for reporting station support.
 
 
 
