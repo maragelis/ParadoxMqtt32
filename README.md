@@ -82,6 +82,7 @@ A command can be any of the following:
 5. Added partition to topics 
 6. Many bugs squashed.
 7. Added support for GSM-GPRS dialer using second Serial RX3/TX3 (GPIO 26-27).
+8. Fixed OTA (over the air) updating. 
 
 
 
