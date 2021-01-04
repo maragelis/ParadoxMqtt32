@@ -383,8 +383,26 @@ void sendArmStatus(){
         }
 }
 
+void sendACFail(bool acfailure)
+{
+  DynamicJsonDocument json(64);
+  char doc[64];
+  json["ACfailure"]=acfailure;
+  char topic[128];
+  sprintf(topic, "%s/%s", root_topicStatus,"ACFailure");
+  serializeJson(json,doc);
+  sendCharMQTT(topic,doc,false);
+
+
+}
 
 void processMessage( byte event, byte sub_event, byte partition , String dummy ){
+  if ( (event == 44 || event == 45) && sub_event==1)
+  {
+      bool acfail = event==44?true:false;
+      sendACFail(acfail);
+  }
+  
   if ((Hassio || HomeKit) && (event == 2 || event == 6))
   {
     updateArmStatus(event,sub_event, partition); 
@@ -518,6 +536,7 @@ void readSerial(){
     while(pindex < 37) // Paradox packet is 37 bytes 
     {
       int serialdata = ParadoxSerial.read();  
+
       inData[pindex++]=serialdata;
 
 #ifdef ParadoxGSMInstalled
@@ -535,7 +554,7 @@ void readSerial(){
       answer_E0();  
     }
     
-    traceInData();   
+      traceInData();   
   }
 
 }
@@ -580,10 +599,7 @@ void saveConfigCallback () {
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
-  // In order to republish this payload, a copy must be made
-  // as the orignal payload buffer will be overwritten whilst
-  // constructing the PUBLISH packet.
-   if (RunningCommand){
+    if (RunningCommand){
      trc("Command already Running exiting");
       return;
     }
