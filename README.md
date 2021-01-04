@@ -28,6 +28,7 @@ Any testing will be helpfull.
 |--------------------|---------------------------|
 | paradox32CTL/out    | All alarm event messages  |
 | paradox32CTL/status | The program messages      |
+| paradox32CTL/status/ACFailure| ACFailure if true there is a ACFailure|
 | paradox32CTL/in     | Input topic               |
 
 ### HomeAssistant MQTT Topics
