@@ -72,7 +72,7 @@ bool ESPDEVKit = 1;
 bool Hassio= 1; // 1 enables 0 disables Hassio-Openhab support
 bool HomeKit= 1 ;// enables homekit topic
 bool SendAllE0events =1 ;//If you need all events set to 1 else 0 
-bool usePartitions= 1; //If you use partitions enable this to get partition number in Hassio topic 
+bool usePartitions= 0; //If you use partitions enable this to get partition number in Hassio topic 
 
 int ArmStateRefresh = 30 ; //will send arm state every 30 seconds dont use smaller then 30, 0 to disable;
 
