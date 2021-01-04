@@ -856,7 +856,7 @@ if (TRACE)
 
         }
     } 
-     readSerialQuick();
+     //readSerialQuick();
   
   } 
 
@@ -1465,7 +1465,7 @@ void setup() {
   WiFi.mode(WIFI_STA);
 
   
-  ParadoxSerial.begin(9600,SERIAL_8N1);
+  ParadoxSerial.begin(9600 ,SERIAL_8N1);
   #ifdef ParadoxGSMInstalled
     GSMModule.begin(9600,SERIAL_8N1, GSMModuleRX, GSMModuleTX);
   #endif
