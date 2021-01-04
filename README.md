@@ -75,6 +75,9 @@ A command can be any of the following:
 | panelstatus      | '1' Partition state & zone status|
 
 ### Release Logs
+202101
+1. Added ACFailure topic. Can be used to get ACfailure events.
+
 202012
 1. Fixed partition reporting
 2. Fixed bypass command not bypassing zones above 10
