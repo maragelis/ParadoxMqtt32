@@ -24,8 +24,7 @@ char inData[38]; // Allocate some space for the string
 byte pindex = 0; // Index into array; where to store the character
 
 long lastReconnectAttempt = 0;
-long statusrefresh = 0;
-long armStatusDelay =0;
+
 
 
 WebServer HTTP(80);
@@ -69,6 +68,8 @@ struct inPayload
  paradoxArm hassioStatus[2];
  paradoxArm homekitStatus[2];
  PanelStatus1msg _PanelStatus1msg;
+
+ SimpleTimer timer;
 
 
 
@@ -498,6 +499,7 @@ void sendCharMQTT(char* topic, char* data , bool retain){
 void readSerial(){
   while (ParadoxSerial.available()<37  )  
   { 
+    
     while (RunningCommand)
     {
       yield();
@@ -519,13 +521,9 @@ void readSerial(){
 
     HTTP.handleClient();
     handleMqttKeepAlive();
-    
-    
-    if (ArmStateRefresh >= 30 && millis() - statusrefresh > ArmStateRefresh*1000) {
-      statusrefresh = millis();
-      sendArmStatus();
-     
-    }
+    timer.run();
+    yield();
+      
       
   }                            
 {
@@ -856,7 +854,7 @@ if (TRACE)
 
         }
     } 
-     readSerialQuick();
+     //readSerialQuick();
   
   } 
 
@@ -1279,7 +1277,7 @@ boolean reconnect() {
     char charBuf[50];
     mqname.toCharArray(charBuf, 50) ;
 
-    if (client.connect(charBuf,Mqtt_Username,Mqtt_Password,root_topicStatus,0,false,"{\"status\":\"Paradox Disconnected\"}")) {
+    if (client.connect(charBuf,Mqtt_Username,Mqtt_Password,root_topicStatus,2,false,"{\"status\":\"Paradox Disconnected\"}")) {
     // Once connected, publish an announcement...
       //client.publish(root_topicOut,"connected");
       trc("MQTT connected");
@@ -1465,7 +1463,7 @@ void setup() {
   WiFi.mode(WIFI_STA);
 
   
-  ParadoxSerial.begin(9600,SERIAL_8N1);
+  ParadoxSerial.begin(9600 ,SERIAL_8N1);
   #ifdef ParadoxGSMInstalled
     GSMModule.begin(9600,SERIAL_8N1, GSMModuleRX, GSMModuleTX);
   #endif
@@ -1527,6 +1525,10 @@ void setup() {
   lastReconnectAttempt = 0;
   serial_flush_buffer();
   configTime(gmtOffset_sec, 0, ntpServer);
+
+ 
+  timer.setInterval(ArmStateRefresh*1000, sendArmStatus);
+  //timer.setInterval(5*60000, PanelStatus1);
   
   sendMQTT(root_topicStatus, "{\"status\":\"System Ready\"}" , false);
     
@@ -1541,7 +1543,7 @@ void loop() {
       serial_flush_buffer(); 
       
     }
-
+    timer.run();
   
 }
 

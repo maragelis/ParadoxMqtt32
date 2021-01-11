@@ -28,6 +28,7 @@
 #include <WiFiMulti.h>
 #include <time.h>
 #include <homekit.h>
+#include <SimpleTimer.h>
 
 
 
@@ -74,7 +75,7 @@ bool HomeKit= 1 ;// enables homekit topic
 bool SendAllE0events =1 ;//If you need all events set to 1 else 0 
 bool usePartitions= 0; //If you use partitions enable this to get partition number in Hassio topic 
 
-int ArmStateRefresh = 30 ; //will send arm state every 30 seconds dont use smaller then 30, 0 to disable;
+int ArmStateRefresh = 60 ; //will send arm state every 30 seconds dont use smaller then 30, 0 to disable;
 
 bool TRACE = 0;
 bool OTAUpdate = 1;
@@ -97,7 +98,7 @@ bool HasTFTScreen  = 0;
 
 
 #ifdef HasTFTScreen
-#include <tftScreen.h>
+//#include <tftScreen.h>
 HasTFTScreen =1;
 #endif
 
@@ -122,7 +123,7 @@ HasTFTScreen =1;
 
 const char simPIN[] = ""; 
 
-#include <TinyGsmClient.h>
+//#include <TinyGsmClient.h>
 
 #endif
 #endif
@@ -151,6 +152,7 @@ void PanelStatus0();
 void PanelStatus1();
 String getpage();
 void panelSetDate();
+
 
 
 #endif /*main_h*/
