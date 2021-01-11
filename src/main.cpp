@@ -1528,7 +1528,7 @@ void setup() {
 
  
   timer.setInterval(ArmStateRefresh*1000, sendArmStatus);
-  timer.setInterval(5*60000, PanelStatus1);
+  //timer.setInterval(5*60000, PanelStatus1);
   
   sendMQTT(root_topicStatus, "{\"status\":\"System Ready\"}" , false);
     

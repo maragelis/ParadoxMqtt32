@@ -98,7 +98,7 @@ bool HasTFTScreen  = 0;
 
 
 #ifdef HasTFTScreen
-#include <tftScreen.h>
+//#include <tftScreen.h>
 HasTFTScreen =1;
 #endif
 
@@ -123,7 +123,7 @@ HasTFTScreen =1;
 
 const char simPIN[] = ""; 
 
-#include <TinyGsmClient.h>
+//#include <TinyGsmClient.h>
 
 #endif
 #endif
