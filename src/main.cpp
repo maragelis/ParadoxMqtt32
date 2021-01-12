@@ -298,6 +298,11 @@ void updateArmStatus(byte event, byte sub_event, byte partition){
          
         break;
 
+        case 14:
+         hassioStatus[partition].stringArmStatus = "pending";
+         
+        break;
+
       default : break;
     }
   }
@@ -419,6 +424,11 @@ void processMessage( byte event, byte sub_event, byte partition , String dummy )
       }
   }
 
+   if ((Hassio || HomeKit) && (event == 29))
+  {
+      sendArmStatus();
+      homekitStatus[partition].sent = homekitStatus[partition].intArmStatus;
+  }
  
   if ((Hassio ) && (event == 1 || event == 0))
   {
