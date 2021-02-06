@@ -57,6 +57,7 @@ struct inPayload
      String stringArmStatus;
      int Partition;
      int sent;
+     int TargetState;
  } paradoxArm;
 
  //paradoxArm hassioStatus0;
@@ -88,6 +89,7 @@ char root_topicIn[50];
 char root_topicHassioArm[50];
 char root_topicHassio [50];
 char root_topicArmHomekit [50];
+char LWT[50] ;
 
 char Mqtt_ServerAddress[50];
 char Mqtt_ServerPort[50];
@@ -158,6 +160,7 @@ void SetupMqttTopics()
   sprintf(root_topicHassio, "%s/%s", Hostname, def_topicHassio );
   sprintf(root_topicOut, "%s/%s", Hostname, def_topicOut );
   sprintf(root_topicHassioArm, "%s/%s", Hostname, def_topicHassioArm );
+  sprintf(LWT,"%s/LWT",Hostname);
 
   //root_topicHassioArm
   //
@@ -274,7 +277,7 @@ void updateArmStatus(byte event, byte sub_event, byte partition){
       case 4:
         hassioStatus[partition].stringArmStatus = "triggered";
         homekitStatus[partition].stringArmStatus = "ALARM_TRIGGERED";
-        homekitStatus[partition].intArmStatus=4;
+        homekitStatus[partition].intArmStatus=(int)SecuritySystemCurrentStates::ALARM_TRIGGERED;
         
        
         
@@ -285,7 +288,7 @@ void updateArmStatus(byte event, byte sub_event, byte partition){
       Debug.println("Disarmed set by updateArmStatus");
         hassioStatus[partition].stringArmStatus = "disarmed";
         homekitStatus[partition].stringArmStatus = "DISARMED";
-        homekitStatus[partition].intArmStatus = 3;
+        homekitStatus[partition].intArmStatus = SecuritySystemCurrentStates::DISARMED;
         
         
         break;
@@ -293,7 +296,7 @@ void updateArmStatus(byte event, byte sub_event, byte partition){
       case 12:
          hassioStatus[partition].stringArmStatus = "armed_away";
          homekitStatus[partition].stringArmStatus = "AWAY_ARM";
-         homekitStatus[partition].intArmStatus = 1;
+         homekitStatus[partition].intArmStatus = SecuritySystemCurrentStates::AWAY_ARM;
          
          
         break;
@@ -313,7 +316,7 @@ void updateArmStatus(byte event, byte sub_event, byte partition){
       
       hassioStatus[partition].stringArmStatus = "armed_home";
       homekitStatus[partition].stringArmStatus = "STAY_ARM";
-      homekitStatus[partition].intArmStatus = 0;
+      homekitStatus[partition].intArmStatus = SecuritySystemCurrentStates::STAY_ARM;
       
     }
     else if ( sub_event == 4)
@@ -321,7 +324,7 @@ void updateArmStatus(byte event, byte sub_event, byte partition){
       
       hassioStatus[partition].stringArmStatus = "armed_home";
       homekitStatus[partition].stringArmStatus = "NIGHT_ARM";
-      homekitStatus[partition].intArmStatus = 2; 
+      homekitStatus[partition].intArmStatus = SecuritySystemCurrentStates::NIGHT_ARM; 
     }
   }
   
@@ -345,8 +348,27 @@ void sendMQTT(String topicNameSend, String dataStr,bool  retain){
     }
 }
 
-void sendArmStatus(){
+
+void sendHomeBridgeState(int _partition,SecuritySystemStates _SystemState,SecuritySystemCurrentStates _SystemCurrentState)
+{
   char output[256];
+  char topic[100];
+  DynamicJsonDocument root(128);
+   //root["characteristic"]=
+   String characteristic = _SystemState==SecuritySystemStates::SecuritySystemCurrentState?"SecuritySystemCurrentState":"SecuritySystemTargetState";
+   root[characteristic]=_SystemCurrentState;
+   
+   serializeJson(root,output);
+   sprintf(topic, "%s/%d/armState", root_topicArmHomekit,_partition);
+   sendCharMQTT(topic,output, false); 
+
+
+}
+
+
+
+void sendArmStatus(){
+  //char output[256];
   DynamicJsonDocument root(128);
   
   char ZoneTopic[128];
@@ -367,23 +389,33 @@ void sendArmStatus(){
           
               
         }
-        if (HomeKit)
+        if (HomeKit )
         {
-          root["Armstatus"]=homekitStatus[0].intArmStatus;
-          root["ArmStatusD"]=homekitStatus[0].stringArmStatus ;
-          sprintf(ZoneTopic, "%s/%d",root_topicArmHomekit,homekitStatus[0].Partition);
-          serializeJson(root,output);
-          sendCharMQTT(ZoneTopic,output, false); 
+          //{"name":"Paradox",service_name="Paradox" ,"characteristic":"SecuritySystemCurrentState","value": 1 }
+          //root["name"] = HomekitDeviceNameP0;
+          //root["service_name"]= HomekitDeviceNameP0;
+          //root["characteristic"]="SecuritySystemCurrentState";
+          //root["value"]=homekitStatus[0].intArmStatus;
+          //root["ArmStatusD"]=homekitStatus[0].stringArmStatus ;
+          //sprintf(ZoneTopic, "%s/%d",homebridgeRootTopic,HB_toSet,homekitStatus[0].Partition);
+          //serializeJson(root,output);
+          //sendCharMQTT(ZoneTopic,output, false); 
+          
+          sendHomeBridgeState(homekitStatus[0].Partition,SecuritySystemStates::SecuritySystemCurrentState  ,static_cast<SecuritySystemCurrentStates>(homekitStatus[0].intArmStatus));
+          
           
           //root.printTo(output);
           if (usePartitions)
           {
-            root["Armstatus"]=homekitStatus[1].intArmStatus;
-            root["ArmStatusD"]=homekitStatus[1].stringArmStatus ;
-           // p2["Partition"]=homekitStatus[1].Partition;          
-            sprintf(ZoneTopic, "%s/%d",root_topicArmHomekit,homekitStatus[1].Partition);
-            serializeJson(root,output);
-            sendCharMQTT(ZoneTopic,output, false); 
+            //root["Armstatus"]=homekitStatus[1].intArmStatus;
+            //root["ArmStatusD"]=homekitStatus[1].stringArmStatus ;
+           //// p2["Partition"]=homekitStatus[1].Partition;          
+            //sprintf(ZoneTopic, "%s/%d",root_topicArmHomekit,homekitStatus[1].Partition);
+            //serializeJson(root,output);
+            //sendCharMQTT(ZoneTopic,output, false); 
+            
+            sendHomeBridgeState(homekitStatus[1].Partition,SecuritySystemStates::SecuritySystemCurrentState,static_cast<SecuritySystemCurrentStates>(homekitStatus[1].intArmStatus));
+          
           }
           
         }
@@ -403,6 +435,7 @@ void sendACFail(bool acfailure)
 }
 
 void processMessage( byte event, byte sub_event, byte partition , String dummy ){
+  char ZoneTopic[128];
   if ( (event == 44 || event == 45) && sub_event==1)
   {
       bool acfail = event==44?true:false;
@@ -432,7 +465,7 @@ void processMessage( byte event, byte sub_event, byte partition , String dummy )
  
   if ((Hassio ) && (event == 1 || event == 0))
   {
-    char ZoneTopic[128];
+    
     if (usePartitions)
     {
       sprintf(ZoneTopic, "%s/%d/zone%d",root_topicHassio,partition,sub_event);
@@ -454,7 +487,9 @@ void processMessage( byte event, byte sub_event, byte partition , String dummy )
   if ((HomeKit ) && (event == 1 || event == 0))
   {
     char output[128];
+    
     DynamicJsonDocument homekitmsg(128);
+
     //StaticJsonBuffer<128> jsonBuffer;
     //JsonObject& homekitmsg = jsonBuffer.createObject();
     homekitmsg["zone"]=sub_event;
@@ -463,8 +498,8 @@ void processMessage( byte event, byte sub_event, byte partition , String dummy )
     homekitmsg["partition"]=partition;
     homekitmsg["state"]=event==1?true:false;
     serializeJson(homekitmsg,output);
-    
-    sendCharMQTT(root_topicArmHomekit,output,false); 
+    sprintf(ZoneTopic,"%s/zone%d",root_topicArmHomekit,sub_event);
+    sendCharMQTT(ZoneTopic,output,false); 
   }
 
   if (SendAllE0events)
@@ -507,37 +542,8 @@ void sendCharMQTT(char* topic, char* data , bool retain){
 }
 
 void readSerial(){
-  while (ParadoxSerial.available()<37  )  
-  { 
-    
-    while (RunningCommand)
-    {
-      yield();
-    }
-      
-    if (OTAUpdate==1)
-    {
-      ArduinoOTA.handle();
-    }
-      
-#ifdef ParadoxGSMInstalled
-
-      while (GSMModule.available()>0  ) 
-      {
-          ParadoxSerial.write(GSMModule.read());
-      }
   
-  #endif
-
-    HTTP.handleClient();
-    handleMqttKeepAlive();
-    timer.run();
-    yield();
-      
-      
-  }                            
-{
-    
+    memset(inData,0,sizeof(inData));
     trc("Reading main loop");
     pindex=0;
   
@@ -546,12 +552,6 @@ void readSerial(){
       int serialdata = ParadoxSerial.read();  
 
       inData[pindex++]=serialdata;
-
-#ifdef ParadoxGSMInstalled
-      
-        GSMModule.write(serialdata);  
-
-#endif
 
     } 
     inData[++pindex]=0x00; // Make it print-friendly
@@ -563,8 +563,7 @@ void readSerial(){
     }
     
       traceInData();   
-  }
-
+ 
 }
 
 void answer_E0(){
@@ -731,6 +730,30 @@ void callback(char* topic, byte* payload, unsigned int length) {
   
   else if (data.Command != 0x00  )  {
     trc(F("Running Command"));
+    
+    
+    if (HomeKit)
+    {
+      SecuritySystemCurrentStates ts=SecuritySystemCurrentStates::DISARMED;
+      if (data.Command == Stay_Arm)
+      {          
+        ts=SecuritySystemCurrentStates::STAY_ARM;
+      }
+      else if (data.Command == Sleep_Arm )
+      {
+        ts=SecuritySystemCurrentStates::NIGHT_ARM;
+      }
+      else if (data.Command == Full_Arm )
+      {
+        ts=SecuritySystemCurrentStates::AWAY_ARM;
+      }
+      else if (data.Command == Disarm )
+      {
+        ts=SecuritySystemCurrentStates::DISARMED;
+      }
+      homekitStatus[data.Subcommand].TargetState = ts;
+      sendHomeBridgeState(data.Subcommand,SecuritySystemStates::SecuritySystemTargetState,ts);      
+    }    
     ControlPanel(data);
   } 
   else  {
@@ -861,6 +884,7 @@ if (TRACE)
           Debug.print(i);
           Debug.print("=");
           Debug.println(data[i], HEX);
+          
 
         }
     } 
@@ -1210,11 +1234,28 @@ struct inPayload Decodejson(char *Payload){
     char charpass2[4];
     char charsubcommand[4];
    
-    
+    String command="";
+    String subcommand="";
     String password = root["password"];
-    String command = root["Command"];
-    String subcommand = root["Subcommand"];
     
+    
+    if (root.containsKey("Subcommand"))
+    {
+      subcommand = root["Subcommand"].as<String>();
+    }else
+    {
+      subcommand = "0";
+    }
+    
+    if (root.containsKey("Command"))
+    {
+       command = root["Command"].as<String>();
+    }
+    
+    if (root.containsKey("SecuritySystemTargetState"))
+    {
+        command=root["SecuritySystemTargetState"].as<String>();
+    }
 
     String pass1 = password.substring(0, 2);
     String pass2 = password.substring(2, 4);
@@ -1287,11 +1328,11 @@ boolean reconnect() {
     char charBuf[50];
     mqname.toCharArray(charBuf, 50) ;
 
-    if (client.connect(charBuf,Mqtt_Username,Mqtt_Password,root_topicStatus,2,false,"{\"status\":\"Paradox Disconnected\"}")) {
+    if (client.connect(charBuf,Mqtt_Username,Mqtt_Password,LWT,2,true,"OFF")) {
     // Once connected, publish an announcement...
       //client.publish(root_topicOut,"connected");
       trc("MQTT connected");
-      sendMQTT(root_topicStatus, "{\"status\":\"Paradox connected\"}", false);
+      sendMQTT(LWT, "ON", true);
       //Topic subscribed so as to get data
       char topicNameRec[50] ;
       sprintf(topicNameRec, "%s/%s", Hostname, def_topicIn);
@@ -1474,9 +1515,7 @@ void setup() {
 
   
   ParadoxSerial.begin(9600 ,SERIAL_8N1);
-  #ifdef ParadoxGSMInstalled
-    GSMModule.begin(9600,SERIAL_8N1, GSMModuleRX, GSMModuleTX);
-  #endif
+  
   Debug.begin(9600,SERIAL_8N1);
 
   
@@ -1496,6 +1535,10 @@ void setup() {
 
   setup_wifi();
   StartSSDP();
+
+  if (WiFi.status() == WL_CONNECTED) {
+      WiFi.setHostname(Hostname);
+   }
   
   ArduinoOTA.setHostname(Hostname);
   ArduinoOTA.setTimeout(60*1000);
@@ -1545,15 +1588,26 @@ void setup() {
 }
 
 void loop() {
+
+  if (!(ParadoxSerial.available()<37))
    readSerial();  
    
    if ( (inData[0] & 0xF0) != 0xE0 && (inData[0] & 0xF0) != 0x40 && (inData[0] & 0xF0) != 0x50 && (inData[0] & 0xF0) != 0x30 && (inData[0] & 0xF0) != 0x70)
     {
       trc(F("start serial_flush_buffer"));
+      memset(inData,0,sizeof(inData));
       serial_flush_buffer(); 
       
     }
-    timer.run();
+    if (OTAUpdate==1)
+    {
+      ArduinoOTA.handle();
+    }
+     
+    HTTP.handleClient();
+    handleMqttKeepAlive();
+    //timer.run();
+    
   
 }
 
