@@ -35,7 +35,7 @@
 
 
 
-#define firmware "PARADOX32_2020.12.31.16"
+#define firmware "PARADOX32_2021.02.06.01"
 
 #define mqtt_server       "192.168.2.230"
 #define mqtt_port         "1883"
