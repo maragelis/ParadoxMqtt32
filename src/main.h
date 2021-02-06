@@ -79,7 +79,7 @@ int ArmStateRefresh = 60 ; //will send arm state every 30 seconds dont use small
 
 bool TRACE = 0;
 bool OTAUpdate = 1;
-bool HasTFTScreen  = 0;
+
 
 #define def_topicOut "out" 
 #define def_topicStatus "status"
@@ -90,45 +90,6 @@ bool HasTFTScreen  = 0;
 
 #define USE_LITTLEFS    true
 #define _WIFIMGR_LOGLEVEL_    0
-
-//#define ParadoxGSMInstalled  // Comment out to use PARADOX GSMModule
-//#define Sim800Instaled //
-//#define HasTFTScreen //
-
-
-
-#ifdef HasTFTScreen
-//#include <tftScreen.h>
-HasTFTScreen =1;
-#endif
-
-
-
-
-#ifdef ParadoxGSMInstalled
-#define GSMModuleRX  GPIO_NUM_26 //RX pin of GSM or Dialer Module 
-#define GSMModuleTX  GPIO_NUM_27 //TX pin of GSM or Dialer Module 
-#else
-#ifdef Sim800Instaled
-
-#define MODEM_RST            5
-#define MODEM_PWKEY          4
-#define MODEM_POWER_ON       23
-#define MODEM_TX             27
-#define MODEM_RX             26
-
-// Configure TinyGSM library
-#define TINY_GSM_MODEM_SIM800      // Modem is SIM800
-#define TINY_GSM_RX_BUFFER 1024    // Set RX buffer to 1Kb
-
-const char simPIN[] = ""; 
-
-//#include <TinyGsmClient.h>
-
-#endif
-#endif
-
-
 
 //If you need event decriptions set to 1 else 0 Can cause slow downs on heavy systems.
 //Can also be enabled by sending sendeventdescriptions=1 to in topic.
@@ -152,6 +113,7 @@ void PanelStatus0();
 void PanelStatus1();
 String getpage();
 void panelSetDate();
+void sendHomeBridgeState(int _partition, SecuritySystemStates _SystemState, SecuritySystemCurrentStates _SystemCurrentState);
 
 
 

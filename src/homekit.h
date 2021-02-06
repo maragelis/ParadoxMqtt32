@@ -1,48 +1,30 @@
-#ifndef _homekit_
-#define _homekit_
-
-#include <Arduino.h>
-#include <stdio.h>
-#include <ArduinoJson.h>
-#include <FS.h>   
-#include <SPIFFS.h>
-
-#define hombridgeRootTopic "homebridge"
-#define HomekitDeviceName "Paradox_Alarm_system"
 
 
+#define homebridgeRootTopic "homebridgeParadox"
+#define HomekitDeviceNameP0 "Paradox_Alarm_P0"
+#define HomekitDeviceNameP1 "Paradox_Alarm_P1"
+#define HB_toAdd "to/add"
+#define HB_addService "to/add/service"
+#define HB_toRemove "to/remove"
+#define HB_removeService "to/remove/service"
+#define HB_toGet "to/get"
+#define HB_toSet "to/set"
+#define HB_setReachability "to/set/reachability"
+#define HB_setAccessoryinformation "to/set/accessoryinformation"
+#define HB_fromGet "from/get"
+#define HB_fromSet "from/set"
+#define HB_fromResponse "from/response"
+#define HB_fromIdentify "from/identify"
 
-struct homebridge{
-     char topic[128];
-     char jsonstr[256];
- } ;
-
-struct homebridgeMSG
+enum SecuritySystemCurrentStates
 {
-    //{"name": "flex_lamp", "service_name": "light", "service": "Switch"}
-    char name[50];
-    char service_name[50];
-    char service[50];
+    STAY_ARM=0,AWAY_ARM = 1,NIGHT_ARM = 2,DISARMED = 3,ALARM_TRIGGERED = 4
 };
 
-extern const char* toAdd ; //= "homebridge/to/add";
-extern const char* addService ; //= "homebridge/to/add/service";
-extern const char* toRemove ; //= "homebridge/to/remove";
-extern const char* removeService; //= "homebridge/to/remove/service";
-extern const char* toGet; //= "homebridge/to/get";
-extern const char* toSet ; //= "homebridge/to/set";
-extern const char* setReachability;//= "homebridge/to/set/reachability";
-extern const char* setAccessoryinformation; //= "homebridge/to/set/accessoryinformation";
-extern const char* fromGet; //= "homebridge/from/get";
-extern const char* fromSet; //= "homebridge/from/set";
-extern const char* fromResponse;// = "homebridge/from/response";
-extern const char* fromIdentify;// = "homebridge/from/identify";
-
-void initHomkitService();
-void getJsonObject(homebridgeMSG msg);
-void readHomekitConfig();
-void saveHomekitConfig();
+enum SecuritySystemStates
+{
+    SecuritySystemTargetState=0,SecuritySystemCurrentState=1
+};
 
 
 
-#endif //_homekit_
