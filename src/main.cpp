@@ -1608,9 +1608,9 @@ void setup() {
   serial_flush_buffer();
   configTime(gmtOffset_sec, 0, ntpServer);
 
- 
-  timer.setInterval(ArmStateRefresh*1000, sendArmStatus);
-  //timer.setInterval(5*60000, PanelStatus1);
+  if (ArmStateRefresh>0)
+   timer.setInterval(ArmStateRefresh*1000, sendArmStatus);
+  
   
   sendMQTT(root_topicStatus, "{\"status\":\"System Ready\"}" , false);
     
@@ -1635,7 +1635,8 @@ void loop() {
      
     HTTP.handleClient();
     handleMqttKeepAlive();
-    timer.run();
+    if (ArmStateRefresh>0)
+      timer.run();
     
   
 }
