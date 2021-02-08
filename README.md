@@ -4,8 +4,8 @@ This project uses an ESP32 to read the events of the serial bus on Paradox alarm
 
 ## Making a connection
 
-Connect the panel through serial connection:
-- Alarm system serial to ESP32 using RX2/TX2 of ESP32<br>
+Connect the panel:
+-Connect Alarm system serial to ESP32 using RX2/TX2 of ESP32<br>
 
 
 ## Arduino IDE settings
@@ -16,7 +16,11 @@ The 37 byte message is broken down into a json message with "Event Group" and "S
 
 See the wiki for more info on Groups and Sub-groups
 
-After flashing the ESP board, connect to it's Wi-Fi (_paradox32CTL_), open the 192.168.4.1 IP address in your browser, input your Wi-Fi credentials and MQTT server address. That's all.  
+After flashing the ESP board, connect to it's Wi-Fi (_paradox32CTL_ password: configParadox32), open the 192.168.4.1 IP address in your browser, input your Wi-Fi credentials and MQTT server address. That's all.  
+## GSM-GPRS Support
+No need to loose your gsm/gprs dialer, added support for second serial  RX3/TX3 used as a passthrough serial .
+SOS. Still havent tested as I dont have a dialer. 
+Any testing will be helpfull.
 
 ### MQTT Topics 
 
@@ -24,15 +28,18 @@ After flashing the ESP board, connect to it's Wi-Fi (_paradox32CTL_), open the 1
 |--------------------|---------------------------|
 | paradox32CTL/out    | All alarm event messages  |
 | paradox32CTL/status | The program messages      |
+| paradox32CTL/status/ACFailure| ACFailure if true there is a ACFailure|
 | paradox32CTL/in     | Input topic               |
 
 ### HomeAssistant MQTT Topics
 
-| Topic                        | Notes                                                     |
-|------------------------------|-----------------------------------------------------------|
-| paradox32CTL/hassio/zoneX | Where x is zone number from 1-32                          |
-| paradox32CTL/hassio/zoneX | Gives values ON/OFF                                       |
-| paradox32CTL/hassio/Arm       | Gives values: disarmed, armed_home, armed_away, triggered |
+| Topic                       | Notes                                                     |
+|-----------------------------|-----------------------------------------------------------|
+| paradox32CTL/hassio/y/zoneX | Where x is zone number from 1-32                          |
+| paradox32CTL/hassio/y/zoneX | Gives values ON/OFF                                       |
+| paradox32CTL/hassio/Arm/y   | Gives values: disarmed, armed_home, armed_away, triggered |
+    y is the partition always 0 in single partition systems
+
 
 ### Sending commands
 
@@ -62,12 +69,26 @@ A command can be any of the following:
 	
 | Main Command     | Subcommand                     |
 |------------------|--------------------------------|
-| arm,sleep,disarm | partition                      |
-| bypass           | The zone number from 0 to 31   |
-| panelstatus      | panel data                     |
-| panelstatus      | panel voltage and battery data |
+| arm,sleep,disarm | 0-1 partition                  |
+| bypass           | 0-31 zone number -1   |
+| panelstatus      | '0' panel data                 |
+| panelstatus      | '1' Partition state & zone status|
 
 ### Release Logs
+202101
+1. Added ACFailure topic. Can be used to get ACfailure events.
+
+202012
+1. Fixed partition reporting
+2. Fixed bypass command not bypassing zones above 10
+3. Fixed Setdate command, uses NTP to get date and sets panel date time.
+4. Moved Status messages command to new topics under topic/status
+5. Added partition to topics 
+6. Many bugs squashed.
+7. Added support for GSM-GPRS dialer using second Serial RX3/TX3 (GPIO 26-27).
+8. Fixed OTA (over the air) updating. 
+
+
 
 20200126: 
 1. Added ArmStatus: pending when exit delay 
@@ -93,3 +114,11 @@ A command can be any of the following:
 
 
 Continue reading the wiki for more information.
+
+## Next Steps
+1. Add homekit support
+2. Add support for sim700 GSM so project can be used as gsm dialer.
+3. Add ademco signaling for reporting station support.
+
+
+
