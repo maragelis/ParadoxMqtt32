@@ -17,7 +17,7 @@
 #include <ESPmDNS.h>
 #include <DNSServer.h>
 #include "PubSubClient.h"
-#include "ESP_WiFiManager.h" 
+#include "WiFiManager.h" 
 #include <HardwareSerial.h>
 #include <AsyncTCP.h>
 
@@ -35,7 +35,9 @@
 
 
 
-#define firmware "PARADOX32_2021.02.06.01"
+
+#define firmware "PARADOX32_2021.02.08"
+
 
 #define mqtt_server       "192.168.2.230"
 #define mqtt_port         "1883"
@@ -67,6 +69,7 @@ const char* ntpServer = "pool.ntp.org";
 
 
 
+bool USE6DigitCode = false;
 //If esp is dev kit then set to 1 else 0
 bool ESPDEVKit = 1;
 
@@ -106,7 +109,7 @@ void readSerial();
 void answer_E0();
 boolean reconnect();
 struct inPayload Decodejson(char *Payload);
-void doLogin(byte pass1, byte pass2);
+void doLogin(inPayload _inpayload);//byte pass1, byte pass2);
 void ControlPanel(inPayload data);
 void ArmState();
 void PanelStatus0();
