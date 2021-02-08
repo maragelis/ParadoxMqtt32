@@ -51,7 +51,8 @@ The command payloads are in JSON. Template:
  "Subcommand":"0"
 }
 ```
-The password is the user's 4 digit password.
+The password is the user's 4/6 digit password.
+set USE6DigitCode true in main.h file
 
 A command can be any of the following:
 - arm
