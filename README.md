@@ -75,6 +75,11 @@ A command can be any of the following:
 | panelstatus      | '1' Partition state & zone status|
 
 ### Release Logs
+
+20210208
+1. Swaped out for tzapu/WiFiManager as ESP_Wifimanager was causing wifi dorps
+2. Added support for 6 digit codes. 
+
 202101
 1. Added ACFailure topic. Can be used to get ACfailure events.
 
