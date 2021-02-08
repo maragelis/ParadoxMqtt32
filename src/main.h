@@ -17,7 +17,7 @@
 #include <ESPmDNS.h>
 #include <DNSServer.h>
 #include "PubSubClient.h"
-#include "ESP_WiFiManager.h" 
+#include "WiFiManager.h" 
 #include <HardwareSerial.h>
 #include <AsyncTCP.h>
 
@@ -67,6 +67,7 @@ const char* ntpServer = "pool.ntp.org";
 
 
 
+bool USE6DigitCode = false;
 //If esp is dev kit then set to 1 else 0
 bool ESPDEVKit = 1;
 
@@ -106,7 +107,7 @@ void readSerial();
 void answer_E0();
 boolean reconnect();
 struct inPayload Decodejson(char *Payload);
-void doLogin(byte pass1, byte pass2);
+void doLogin(inPayload _inpayload);//byte pass1, byte pass2);
 void ControlPanel(inPayload data);
 void ArmState();
 void PanelStatus0();

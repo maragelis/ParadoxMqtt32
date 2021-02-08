@@ -36,6 +36,7 @@ struct inPayload
 {
   byte PcPasswordFirst2Digits;
   byte PcPasswordSecond2Digits;
+  byte PcPasswordThird2Digits;
   byte Command;
   byte Subcommand;
  } ;
@@ -697,7 +698,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if (!PanelConnected)
   {
     trc(F("Panel not logged in"));
-    doLogin(data.PcPasswordFirst2Digits, data.PcPasswordSecond2Digits);
+    doLogin(data);//.PcPasswordFirst2Digits, data.PcPasswordSecond2Digits);
     trc(PanelConnected?"Panel logged in":"Panel login failed");
   }
       
@@ -1126,7 +1127,7 @@ void PanelStatus1(){
 
 
 
-void doLogin(byte pass1, byte pass2){
+void doLogin(inPayload _inpayload){//byte pass1, byte pass2){
   byte data[MessageLength] = {};
   byte data1[MessageLength] = {};
   byte checksum;
@@ -1178,8 +1179,11 @@ void doLogin(byte pass1, byte pass2){
       data1[10] = 0x00;
       data1[11] = 0x00;
       data1[13] = 0x55;
-      data1[14] = pass1; //panel pc password digit 1 & 2
-      data1[15] = pass2; //panel pc password digit 3 & 4
+      data1[14] = _inpayload.PcPasswordFirst2Digits; //panel pc password digit 1 & 2
+      data1[15] = _inpayload.PcPasswordSecond2Digits; //panel pc password digit 3 & 4
+      if (USE6DigitCode)
+      data1[16] = _inpayload.PcPasswordThird2Digits; //panel pc password digit 3 & 4
+
       data1[33] = 0x05;
 
      
@@ -1232,6 +1236,7 @@ struct inPayload Decodejson(char *Payload){
   {
     char charpass1[4];
     char charpass2[4];
+    
     char charsubcommand[4];
    
     String command="";
@@ -1259,6 +1264,18 @@ struct inPayload Decodejson(char *Payload){
 
     String pass1 = password.substring(0, 2);
     String pass2 = password.substring(2, 4);
+
+    byte PanelPassword3=0xFF;
+    if (USE6DigitCode)
+    {
+      char charpass3[4];
+      String pass3 = password.substring(4, 6);
+      pass3.toCharArray(charpass3, 4);
+      unsigned long passNumber3 = strtoul(charpass3, NULL, 16);
+      if (passNumber3 < 10)
+        passNumber3 = passNumber3 + 160;
+      PanelPassword3 = passNumber3 & 0xFF; 
+    }
 
     // trc(pass1);
     // trc(pass2);
@@ -1300,7 +1317,7 @@ if (TRACE)
 
     byte CommandB = getPanelCommand(command) ;
   
-    inPayload data1 = {PanelPassword1, PanelPassword2, CommandB, SubCommand};
+    inPayload data1 = {PanelPassword1, PanelPassword2, PanelPassword3, CommandB, SubCommand};
 
     return data1;
   }
@@ -1327,6 +1344,16 @@ boolean reconnect() {
     String mqname =  WiFi.macAddress();
     char charBuf[50];
     mqname.toCharArray(charBuf, 50) ;
+    
+    if (WiFi.status() != WL_CONNECTED) {
+      while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+      Serial.println("Connection Failed! Rebooting...");
+      delay(5000);
+      ESP.restart();
+      }
+    }
+   
+   
 
     if (client.connect(charBuf,Mqtt_Username,Mqtt_Password,LWT,2,true,"OFF")) {
     // Once connected, publish an announcement...
@@ -1351,13 +1378,13 @@ boolean reconnect() {
 
 void setup_wifi(){
   
-    ESP_WMParameter custom_mqtt_server("server", "mqtt server", Mqtt_ServerAddress, 40);
-    ESP_WMParameter custom_mqtt_port("port", "mqtt port", Mqtt_ServerPort, 6);
+    WiFiManagerParameter custom_mqtt_server("server", "mqtt server", Mqtt_ServerAddress, 40);
+    WiFiManagerParameter custom_mqtt_port("port", "mqtt port", Mqtt_ServerPort, 6);
 
-     ESP_WMParameter custom_MqttUserName("Username", "mqtt Username", Mqtt_Username, 40);
-     ESP_WMParameter custom_MqttUserPassword("Password", "mqtt Password", Mqtt_Password, 40);
+     WiFiManagerParameter custom_MqttUserName("Username", "mqtt Username", Mqtt_Username, 40);
+     WiFiManagerParameter custom_MqttUserPassword("Password", "mqtt Password", Mqtt_Password, 40);
 
-    ESP_WiFiManager wifiManager;
+    WiFiManager wifiManager;
     if (ResetConfig)
     {
       trc(F("Resetting wifiManager"));
