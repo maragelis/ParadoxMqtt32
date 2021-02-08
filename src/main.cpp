@@ -1346,11 +1346,13 @@ boolean reconnect() {
     mqname.toCharArray(charBuf, 50) ;
     
     if (WiFi.status() != WL_CONNECTED) {
-      while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-      Serial.println("Connection Failed! Rebooting...");
-      delay(5000);
-      ESP.restart();
-      }
+      //while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+      //Serial.println("Connection Failed! Rebooting...");
+      //delay(5000);
+      //ESP.restart();
+      //}
+      WiFi.begin();
+      vTaskDelay(5000);
     }
    
    
@@ -1633,7 +1635,7 @@ void loop() {
      
     HTTP.handleClient();
     handleMqttKeepAlive();
-    //timer.run();
+    timer.run();
     
   
 }
