@@ -73,6 +73,9 @@ A command can be any of the following:
 | panelstatus      | '1' Partition state & zone status|
 
 ### Release Logs
+20210210
+1. Added datetime to E0 message
+2. code cleanup and bug fixes
 
 20210208
 1. Swaped out for tzapu/WiFiManager as ESP_Wifimanager was causing wifi dorps
