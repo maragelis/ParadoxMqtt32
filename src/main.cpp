@@ -580,8 +580,8 @@ void answer_E0(){
     }
     zlabel.trim();
   }
-  char dateOfEvent[11];
-  sprintf(dateOfEvent, "%d/%d/%d %d:%d" ,inData[2],inData[3],inData[4],inData[5],inData[6]);
+  char dateOfEvent[16];
+  sprintf(dateOfEvent, "%02d/%02d/%02d %02d:%02d" ,inData[2],inData[3],inData[4],inData[5],inData[6]);
 
   processMessage( inData[7], inData[8], inData[9], zlabel,dateOfEvent );
   if (inData[7] == 48 && inData[8] == 3)
