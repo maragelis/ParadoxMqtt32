@@ -7,11 +7,9 @@
 #include <ArduinoJson.h>
 #include <FS.h>   
 #include <SPIFFS.h>
-#include <SPI.h>
 #include <esp_wifi.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
-
 #include <WebServer.h>
 #include <WiFiUdp.h>
 #include <ESPmDNS.h>
@@ -20,14 +18,10 @@
 #include "WiFiManager.h" 
 #include <HardwareSerial.h>
 #include <AsyncTCP.h>
-
-#include <WebServer.h>
 #include <ESP32SSDP.h>
-#include <DNSServer.h>
 #include <ParadoxEvents.h>
 #include <WiFiMulti.h>
 #include <time.h>
-#include <homekit.h>
 #include <SimpleTimer.h>
 
 
@@ -35,7 +29,7 @@
 
 
 
-#define firmware "PARADOX32_2021.02.08.18"
+#define firmware "PARADOX32_2021.02.10.16"
 
 
 #define mqtt_server       "192.168.2.230"
@@ -62,10 +56,6 @@ const char* ntpServer = "pool.ntp.org";
 #define MessageLength 37
 
 #define LED LED_BUILTIN
-
-#define Uart0_RX 
-#define TTLCD 
-
 
 
 bool USE6DigitCode = false;
@@ -98,6 +88,15 @@ bool OTAUpdate = 1;
 //Enable it here if you want it enabled after a reboot
 bool SendEventDescriptions =1;
 
+enum SecuritySystemCurrentStates
+{
+    STAY_ARM=0,AWAY_ARM = 1,NIGHT_ARM = 2,DISARMED = 3,ALARM_TRIGGERED = 4
+};
+
+enum SecuritySystemStates
+{
+    SecuritySystemTargetState=0,SecuritySystemCurrentState=1
+};
 
 void serial_flush_buffer();
 void handleMqttKeepAlive();
