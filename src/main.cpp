@@ -435,7 +435,7 @@ void sendACFail(bool acfailure)
 
 }
 
-void processMessage( byte event, byte sub_event, byte partition , String dummy ){
+void processMessage( byte event, byte sub_event, byte partition , String dummy, char* dtOFEvent ){
   char ZoneTopic[128];
   if ( (event == 44 || event == 45) && sub_event==1)
   {
@@ -509,6 +509,7 @@ void processMessage( byte event, byte sub_event, byte partition , String dummy )
      DynamicJsonDocument root(256);
     //StaticJsonBuffer<256> jsonBuffer;
     //JsonObject& root = jsonBuffer.createObject();
+    root["DTofEvent"] = dtOFEvent;
     root["event"]=event;
     root["sub_event"]=sub_event;
     root["partition"]=partition;
@@ -579,8 +580,10 @@ void answer_E0(){
     }
     zlabel.trim();
   }
-  
-  processMessage( inData[7], inData[8], inData[9], zlabel);
+  char dateOfEvent[11];
+  sprintf(dateOfEvent, "%d/%d/%d %d:%d" ,inData[2],inData[3],inData[4],inData[5],inData[6]);
+
+  processMessage( inData[7], inData[8], inData[9], zlabel,dateOfEvent );
   if (inData[7] == 48 && inData[8] == 3)
   {
     PanelConnected = false;
@@ -1608,9 +1611,9 @@ void setup() {
   serial_flush_buffer();
   configTime(gmtOffset_sec, 0, ntpServer);
 
- 
-  timer.setInterval(ArmStateRefresh*1000, sendArmStatus);
-  //timer.setInterval(5*60000, PanelStatus1);
+  if (ArmStateRefresh>0)
+   timer.setInterval(ArmStateRefresh*1000, sendArmStatus);
+  
   
   sendMQTT(root_topicStatus, "{\"status\":\"System Ready\"}" , false);
     
@@ -1618,7 +1621,7 @@ void setup() {
 
 void loop() {
 
-  if (!(ParadoxSerial.available()<37))
+  if (ParadoxSerial.available()>=MessageLength)
    readSerial();  
    
    if ( (inData[0] & 0xF0) != 0xE0 && (inData[0] & 0xF0) != 0x40 && (inData[0] & 0xF0) != 0x50 && (inData[0] & 0xF0) != 0x30 && (inData[0] & 0xF0) != 0x70)
@@ -1635,7 +1638,8 @@ void loop() {
      
     HTTP.handleClient();
     handleMqttKeepAlive();
-    timer.run();
+    if (ArmStateRefresh>0)
+      timer.run();
     
   
 }
