@@ -1339,7 +1339,7 @@ void serial_flush_buffer(){
   trc("serial clean");
 }
 
-
+/*
 boolean reconnect() {
   // Loop until we're reconnected
   while (!client.connected()) {
@@ -1356,8 +1356,7 @@ boolean reconnect() {
       //}
       WiFi.begin();
       vTaskDelay(5000);
-    }
-   
+    }   
    
 
     if (client.connect(charBuf,Mqtt_Username,Mqtt_Password,LWT,2,true,"OFF")) {
@@ -1377,6 +1376,23 @@ boolean reconnect() {
       // Wait 5 seconds before retrying
       delay(5000);
     }
+  }
+  return client.connected();
+}
+*/
+
+boolean reconnect() {
+  String mqname =  WiFi.macAddress();
+    char charBuf[50];
+    mqname.toCharArray(charBuf, 50) ;
+
+  if (client.connect(charBuf,Mqtt_Username,Mqtt_Password,LWT,2,true,"OFF")) {
+    // Once connected, publish an announcement...
+    sendMQTT(LWT, "ON", true);
+    // ... and resubscribe
+    char topicNameRec[50] ;
+    sprintf(topicNameRec, "%s/%s", Hostname, def_topicIn);
+    client.subscribe(topicNameRec);
   }
   return client.connected();
 }
@@ -1631,6 +1647,7 @@ void loop() {
       serial_flush_buffer(); 
       
     }
+
     if (OTAUpdate==1)
     {
       ArduinoOTA.handle();
@@ -1641,6 +1658,21 @@ void loop() {
     if (ArmStateRefresh>0)
       timer.run();
     
+
+    if (!client.connected()) {
+    long now = millis();
+    if (now - lastReconnectAttempt > 5000) {
+      lastReconnectAttempt = now;
+      // Attempt to reconnect
+      if (reconnect()) {
+        lastReconnectAttempt = 0;
+      }
+    }
+  } else {
+    // Client connected
+
+    client.loop();
+  }
   
 }
 
